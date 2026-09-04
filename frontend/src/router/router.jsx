@@ -7,7 +7,7 @@ import Home from "../pages/home";
 import Following from "../pages/following";
 import Explore from "../pages/explore";
 import Post from "../pages/post";
-import NotFound from "../pages/notfound";
+import NotFound from "../pages/notFound";
 
 import { FollowingProvider } from "../context/followingContext";
 
