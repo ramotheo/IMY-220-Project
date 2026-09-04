@@ -74,14 +74,11 @@ function Form({ mode = "login", navigateTo }) {
 
     const isLogin = mode === "login";
 
-
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
 
-        // Clear previous error
         setError("");
 
-        // Validate BEFORE doing anything else
         const validationError = validateFormData(
             formData,
             isLogin
@@ -92,27 +89,47 @@ function Form({ mode = "login", navigateTo }) {
             return;
         }
 
-        // Only start loading if validation passed
         setLoading(true);
 
         try {
-            // Simulate a network request
-            setTimeout(() => {
-                console.log("Form submitted:", formData);
+            const response = await fetch(
+                `http://localhost:3000/api/auth/${
+                    isLogin ? "login" : "signup"
+                }`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(formData),
+                }
+            );
 
-                setLoading(false);
+            const data = await response.json();
 
-                navigate(navigateTo);
-            }, 2000);
+            if (!response.ok) {
+                throw new Error(
+                    data.message || "Something went wrong."
+                );
+            }
 
-        } catch (error) {
+            console.log("Server response:", data);
+
             setLoading(false);
-            setError("Something went wrong. Please try again.");
 
-            console.error("Error submitting form:", error);
+            navigate(navigateTo);
+        } catch (error) {
+            console.error(
+                "Error submitting form:",
+                error
+            );
+
+            setLoading(false);
+            setError(
+                "Unable to connect to the server. Please try again."
+            );
         }
     }
-
 
     return (
         <main className="form">
