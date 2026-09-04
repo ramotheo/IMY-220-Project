@@ -1,0 +1,270 @@
+.profile-page {
+    min-height: 100vh;
+    background: #0f1117;
+    color: #f5f5f5;
+}
+
+.profile-content {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+}
+
+/* =========================
+   Profile Header
+========================= */
+
+.profile-header {
+    padding-bottom: 30px;
+}
+
+.profile-top {
+    display: flex;
+    align-items: center;
+    gap: 70px;
+}
+
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    flex-shrink: 0;
+}
+
+.profile-picture img,
+.profile-picture-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.profile-picture img {
+    display: block;
+    object-fit: cover;
+}
+
+.profile-picture-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #1b1e27;
+    color: #f5f5f5;
+
+    font-size: 48px;
+    font-weight: 500;
+}
+
+/* =========================
+   Stats
+========================= */
+
+.profile-stats {
+    display: flex;
+    gap: 70px;
+}
+
+.profile-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.profile-stat strong {
+    color: #ffffff;
+    font-size: 26px;
+    font-weight: 600;
+}
+
+.profile-stat span {
+    color: #8b8f9a;
+    font-size: 14px;
+}
+
+/* =========================
+   Bio
+========================= */
+
+.profile-bio {
+    margin-top: 25px;
+}
+
+.profile-bio h1 {
+    margin: 0;
+
+    color: #ffffff;
+
+    font-size: 25px;
+    font-weight: 600;
+}
+
+.profile-bio p {
+    margin: 3px 0 12px;
+
+    color: #8b8f9a;
+
+    font-size: 14px;
+}
+
+.profile-bio span {
+    display: block;
+    max-width: 500px;
+
+    color: #c5c7cc;
+
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* =========================
+   Profile Actions
+========================= */
+
+.profile-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.profile-button {
+    padding: 9px 22px;
+
+    border: 1px solid #2b2e38;
+    border-radius: 5px;
+
+    background: #171a22;
+    color: #f5f5f5;
+
+    font-family: inherit;
+    font-size: 14px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.profile-button:hover {
+    background: #20232d;
+    border-color: #444854;
+}
+
+/* =========================
+   Profile Tabs
+========================= */
+
+.profile-tabs {
+    display: flex;
+
+    margin-top: 15px;
+
+    border-bottom: 1px solid #292c35;
+}
+
+.profile-tab {
+    position: relative;
+
+    padding: 16px 25px 14px;
+
+    border: none;
+
+    background: transparent;
+    color: #777c88;
+
+    font-family: inherit;
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+.profile-tab::after {
+    content: "";
+
+    position: absolute;
+
+    left: 20px;
+    right: 20px;
+    bottom: -1px;
+
+    height: 2px;
+
+    background: transparent;
+}
+
+.profile-tab:hover {
+    color: #ffffff;
+}
+
+.profile-tab.active {
+    color: #ffffff;
+}
+
+.profile-tab.active::after {
+    background: #ffffff;
+}
+
+/* =========================
+   Post Grid
+========================= */
+
+.profile-post-grid {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 18px;
+
+    padding-top: 25px;
+}
+
+.profile-post-grid .post-card {
+    width: 100%;
+}
+
+/* =========================
+   Mobile
+========================= */
+
+@media (max-width: 700px) {
+    .profile-content {
+        padding: 25px 18px 60px;
+    }
+
+    .profile-top {
+        gap: 30px;
+    }
+
+    .profile-picture {
+        width: 100px;
+        height: 100px;
+    }
+
+    .profile-stats {
+        gap: 25px;
+    }
+
+    .profile-stat strong {
+        font-size: 20px;
+    }
+
+    .profile-stat span {
+        font-size: 12px;
+    }
+
+    .profile-tabs {
+        overflow-x: auto;
+    }
+
+    .profile-tab {
+        white-space: nowrap;
+
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .profile-post-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+}

@@ -1,0 +1,375 @@
+/* ====================== EXPLORE PAGE ====================== */
+
+.explore-page {
+    min-height: 100vh;
+
+    width: 100%;
+
+    background: #080d27;
+    color: #ffffff;
+}
+
+
+/* ====================== HEADER ====================== */
+
+.explore-header {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 28px clamp(24px, 5vw, 60px) 10px;
+
+    box-sizing: border-box;
+}
+
+.explore-header h1 {
+    margin: 0;
+
+    font-size: clamp(32px, 3vw, 42px);
+    font-weight: 300;
+
+    letter-spacing: 2px;
+}
+
+
+/* ====================== NOTIFICATIONS ====================== */
+
+.explore-header .notification-button {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: none;
+    background: transparent;
+
+    color: #ffffff;
+
+    cursor: pointer;
+}
+
+.explore-header .notification-button svg {
+    width: 30px;
+    height: 30px;
+}
+
+
+/* ====================== CONTENT ====================== */
+
+.explore-content {
+    width: 100%;
+
+    padding: 0 clamp(14px, 3vw, 26px);
+
+    box-sizing: border-box;
+}
+
+
+/* ====================== SEARCH ====================== */
+
+.explore-search {
+    width: 100%;
+    height: 28px;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 1.5%;
+    box-sizing: border-box;
+    background: #ffffff;
+    border-radius: 8px;
+    color: #626262;
+}
+
+.explore-search svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.explore-search input {
+    width: 100%;
+
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    color: #222222;
+
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.explore-search input::placeholder {
+    color: #666666;
+}
+
+
+/* ====================== POST GRID ====================== */
+
+.explore-grid {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: clamp(12px, 2vw, 18px);
+
+    margin-top: 22px;
+}
+
+.explore-grid-item {
+    position: relative;
+
+    width: 100%;
+
+    aspect-ratio: 1 / 1;
+
+    display: block;
+
+    overflow: hidden;
+
+    border: 1px solid #ffffff;
+    border-radius: 10px;
+
+    box-sizing: border-box;
+
+    background: #080d27;
+}
+
+.explore-grid-item img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    transition: transform 0.25s ease;
+}
+
+.explore-grid-item:hover img {
+    transform: scale(1.04);
+}
+
+
+/* ====================== SEARCH RESULTS ====================== */
+
+.explore-results {
+    width: calc(100% + 28px);
+    margin-top: 10px;
+    margin-left: -14px;
+    padding: 8px 14px;
+    box-sizing: border-box;
+    color: #111111;
+    border-radius: 8px;
+}
+
+
+/* ====================== USER RESULT ====================== */
+
+.explore-user {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.8%;
+    background: #d8d8d8;
+    color: #111111;
+    text-decoration: none;
+    border-radius: 8px;
+}
+
+.explore-user:hover {
+    opacity: 0.7;
+}
+
+
+/* ====================== USER AVATAR ====================== */
+
+.explore-user-avatar {
+    width: 25px;
+    height: 25px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1.5px solid #ffffff;
+    border-radius: 50%;
+
+    color: #ffffff;
+
+    box-sizing: border-box;
+}
+
+.explore-user-avatar svg {
+    width: 18px;
+    height: 18px;
+
+    fill: none;
+    stroke: currentColor;
+}
+
+
+/* ====================== USER INFORMATION ====================== */
+
+.explore-user-info {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 1px;
+}
+
+.explore-user-info strong {
+    font-size: 11px;
+    font-weight: 700;
+
+    line-height: 1.1;
+}
+
+.explore-user-info span {
+    font-size: 9px;
+
+    color: #333333;
+
+    line-height: 1.1;
+}
+
+
+/* ====================== NO RESULTS ====================== */
+
+.explore-no-results {
+    padding: 40px 10px;
+
+    text-align: center;
+}
+
+.explore-no-results h2 {
+    margin: 0 0 6px;
+
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.explore-no-results p {
+    margin: 0;
+
+    font-size: 12px;
+
+    color: #555555;
+}
+
+
+/* ====================== TABLET ====================== */
+
+@media (max-width: 768px) {
+    .explore-header {
+        padding: 24px 24px 10px;
+    }
+
+    .explore-content {
+        padding: 0 20px;
+    }
+
+    .explore-results {
+        width: calc(100% + 40px);
+        margin-left: -20px;
+
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .explore-grid {
+        gap: 12px;
+    }
+}
+
+
+/* ====================== MOBILE ====================== */
+
+@media (max-width: 600px) {
+    .explore-header {
+        padding: 20px 20px 8px;
+    }
+
+    .explore-header h1 {
+        font-size: 32px;
+    }
+
+    .explore-header .notification-button {
+        width: 36px;
+        height: 36px;
+    }
+
+    .explore-header .notification-button svg {
+        width: 27px;
+        height: 27px;
+    }
+
+    .explore-content {
+        padding: 0 14px;
+    }
+
+    .explore-search {
+        height: 28px;
+    }
+
+    .explore-grid {
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    .explore-grid-item {
+        border-radius: 8px;
+    }
+
+    .explore-results {
+        width: calc(100% + 28px);
+        margin-left: -14px;
+
+        min-height: calc(100vh - 145px);
+
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+}
+
+
+/* ====================== SMALL MOBILE ====================== */
+@media (max-width: 420px) {
+    .explore-grid {
+        gap: 8px;
+    }
+
+    .explore-search input {
+        font-size: 13px;
+    }
+
+    .explore-user {
+        gap: 10px;
+    }
+
+    .explore-user-avatar {
+        width: 24px;
+        height: 24px;
+    }
+
+    .explore-user-info strong {
+        font-size: 10px;
+    }
+
+    .explore-user-info span {
+        font-size: 8px;
+    }
+}
