@@ -5,6 +5,7 @@ import cors from "cors";
 
 import upload from "./multer.js";
 
+import { connectToDatabase, getDatabase } from "./db.js";
 const app = express();
 const PORT = 3000;
 
@@ -17,7 +18,6 @@ app.use("/uploads", express.static("uploads"));
 /*
 ===================== AUTHENTICATION ENDPOINTS =====================
 */
-
     // Login endpoint
     app.post("/api/auth/login", (req, res) => {
         const { username, email, password } = req.body;
@@ -67,26 +67,50 @@ app.use("/uploads", express.static("uploads"));
 */
 
     // Image upload endpoint
-    app.post("/api/upload", upload.single("image"), (req, res) => {
-        const { username, caption } = req.body;
+    app.post("/api/upload", upload.single("image"), async (req, res) => {
+        try {
+            const { username, caption } = req.body;
 
-        console.log("New Post:", {
-            username: username,
-            caption: caption,
-            image: req.file ? req.file.filename : null,
-        });
+            const db = getDatabase();
 
-        res.status(201).json({
-            success: true,
-            message: "Image uploaded successfully",
-            post: {
+            const post = {
                 username: username,
                 caption: caption,
                 image: req.file ? req.file.filename : null,
-            },
-        });
+                likes: 0,
+                comments: [],
+            };
+
+            const result = await db.collection("posts").insertOne(post);
+
+            console.log("New Post:", {
+                username: username,
+                caption: caption,
+                image: req.file ? req.file.filename : null,
+            });
+
+            res.status(201).json({
+                success: true,
+                message: "Post created successfully",
+                post: {
+                    username: username,
+                    caption: caption,
+                    image: req.file ? req.file.filename : null,
+                    likes: 0,
+                    comments: [],
+                },
+            });
+        } catch (error) {
+            console.error("Error creating post: ", error);
+            res.status(500).json({
+                success: false,
+                message: "Error creating post",
+            });
+        }
     });
 
-app.listen(PORT, () => {
-    console.log(`Backend running on http://localhost:${PORT}`);
-});
+connectToDatabase().then(() => {
+    app.listen(PORT, () => {
+        console.log(`Backend running on http://localhost:${PORT}`);
+    });
+})
