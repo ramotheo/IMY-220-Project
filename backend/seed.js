@@ -2,9 +2,10 @@
 
 import fs from "fs";
 import path from "path";
+import bcrypt from "bcrypt";
 import { fileURLToPath } from "url";
 
-import { connectDB, getDB } from "./db.js";
+import { connectToDatabase, getDatabase } from "./db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,9 +65,9 @@ const imageUrls = [
 // =====================
 
 async function seedDatabase() {
-  await connectDB();
+  await connectToDatabase();
 
-  const db = getDB();
+  const db = getDatabase();
 
   const usersCollection = db.collection("users");
   const postsCollection = db.collection("posts");
@@ -80,8 +81,20 @@ async function seedDatabase() {
     fs.mkdirSync(uploadDirectory);
   }
 
-  // Insert users
-  await usersCollection.insertMany(users);
+    // Hash passwords
+    const hashedUsers = [];
+
+    for (const user of users) {
+        const hashedPassword = await bcrypt.hash(user.password, 10);
+
+        hashedUsers.push({
+            username: user.username,
+            email: user.email,
+            password: hashedPassword,
+        });
+    }
+
+    await usersCollection.insertMany(hashedUsers);
 
   console.log(`${users.length} users inserted.`);
 
