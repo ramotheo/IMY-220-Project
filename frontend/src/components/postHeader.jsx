@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import ProfilePicture from "./profilePicture";
 import { UserIcon } from "./icon";
 
@@ -11,18 +13,23 @@ function PostHeader({ username }) {
 
     return (
         <div className="post-header">
-            <div className="post-user">
-                {user?.profilePicture ? (
-                    <ProfilePicture
-                        username={username}
-                        className="post-avatar"
-                    />
-                ) : (
-                    <UserIcon />
-                )}
+            <Link
+                to={`/profile/${encodeURIComponent(username)}`}
+                className="post-user-link"
+            >
+                <div className="post-user">
+                    {user?.profilePicture ? (
+                        <ProfilePicture
+                            username={username}
+                            className="post-avatar"
+                        />
+                    ) : (
+                        <UserIcon />
+                    )}
 
-                <span>{username}</span>
-            </div>
+                    <span>{username}</span>
+                </div>
+            </Link>
         </div>
     );
 }

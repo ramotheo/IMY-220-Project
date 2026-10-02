@@ -50,15 +50,34 @@
     margin-bottom: 10px;
 }
 
-.post-caption-link {
-    text-decoration: none;
+.post-caption {
     color: white;
+}
+
+.post-caption-author,
+.post-caption-more {
+    color: inherit;
+    text-decoration: none;
+}
+
+.post-caption-author:hover,
+.post-caption-more:hover {
+    text-decoration: underline;
 }
 .post-user {
     display: flex;
     align-items: center;
 
     gap: 10px;
+}
+
+.post-user-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.post-user-link:hover span {
+    text-decoration: underline;
 }
 
 .post-user span {

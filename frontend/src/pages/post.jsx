@@ -102,7 +102,10 @@ function Post() {
             {/* ====================== POST ====================== */}
             <section className="single-post">
                 <header className="single-post-header">
-                    <div className="single-post-user">
+                    <Link
+                        to={`/profile/${encodeURIComponent(post.username)}`}
+                        className="single-post-user"
+                    >
                         <ProfilePicture
                             username={post.username}
                             className="post-avatar"
@@ -117,7 +120,7 @@ function Post() {
                                 @{post.username}
                             </span>
                         </div>
-                    </div>
+                    </Link>
 
                     <button
                         className="follow-button"
@@ -205,7 +208,12 @@ function Post() {
 
 
                 <div className="single-post-caption">
-                    <strong>{post.username}</strong>{" "}
+                    <Link
+                        to={`/profile/${encodeURIComponent(post.username)}`}
+                        className="single-post-author"
+                    >
+                        <strong>{post.username}</strong>
+                    </Link>{" "}
                     {post.caption}
                 </div>
             </section>
@@ -213,7 +221,11 @@ function Post() {
 
             {/* ====================== COMMENTS ====================== */}
             <section className="comments" ref={commentsRef}>
-                {postComments.map((comment) => (
+                {postComments.map((comment) => {
+                    const replyUsername = postComments.find(
+                        (parent) => parent.id === comment.replyTo
+                    )?.username || post.username;
+                    return (
                     <article
                         className="comment"
                         key={comment.id}
@@ -246,7 +258,10 @@ function Post() {
                             </p>
                             {comment.replyTo && (
                                 <span className="comment-reply-target">
-                                    Replying to @{postComments.find((parent) => parent.id === comment.replyTo)?.username || post.username}
+                                    Replying to @
+                                    <Link to={`/profile/${encodeURIComponent(replyUsername)}`}>
+                                        {replyUsername}
+                                    </Link>
                                 </span>
                             )}
                         </div>
@@ -274,7 +289,8 @@ function Post() {
                             </button>
                         </div>
                     </article>
-                ))}
+                    );
+                })}
             </section>
 
             {replyOpen && (

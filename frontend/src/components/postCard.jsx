@@ -168,21 +168,21 @@ function PostCard({ post }) {
                 </button>
             </div>
 
-            <Link
-                to={`/post/${post.id}`}
-                className="post-caption-link"
-            >
-                <div className="post-caption">
-                    <p>
-                        <strong>{post.username}</strong>{" "}
-                        {post.caption}
-                    </p>
+            <div className="post-caption">
+                <p>
+                    <Link
+                        to={`/profile/${encodeURIComponent(post.username)}`}
+                        className="post-caption-author"
+                    >
+                        <strong>{post.username}</strong>
+                    </Link>{" "}
+                    {post.caption}
+                </p>
 
-                    <span>
-                        Load more comments...
-                    </span>
-                </div>
-            </Link>
+                <Link to={`/post/${post.id}`} className="post-caption-more">
+                    Load more comments...
+                </Link>
+            </div>
         </article>
     );
 }

@@ -40,6 +40,12 @@
     align-items: center;
 
     gap: 12px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.single-post-user:hover strong {
+    text-decoration: underline;
 }
 
 .post-avatar {
@@ -403,6 +409,15 @@
 
 .single-post-caption strong {
     font-weight: 700;
+}
+
+.single-post-author {
+    color: inherit;
+    text-decoration: none;
+}
+
+.single-post-author:hover {
+    text-decoration: underline;
 }
 
 /* ====================== COMMENTS ====================== */

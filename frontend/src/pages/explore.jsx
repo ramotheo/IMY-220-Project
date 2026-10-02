@@ -55,7 +55,10 @@ function Explore() {
                                     key={user._id}
                                 >
                                     <div className="explore-user-avatar">
-                                        <ProfilePicture username={user.username} />
+                                        <ProfilePicture
+                                            username={user.username}
+                                            className="explore-user-avatar-image"
+                                        />
                                     </div>
 
                                     <div className="explore-user-info">
