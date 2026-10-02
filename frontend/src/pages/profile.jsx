@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 
 import PostCard from "../components/postCard";
 import SiteHeader from "../components/siteHeader";
-import { users } from "../data/users";
 
 import { useSocial } from "../context/useSocial";
 
@@ -14,6 +13,7 @@ function Profile() {
     const { username } = useParams();
     const {
         profile,
+        users,
         posts,
         likedPostIds,
         bookmarkedPostIds,
@@ -104,12 +104,12 @@ function Profile() {
                         <div className="profile-stats">
 
                             <div className="profile-stat">
-                                <strong>{viewedProfile.following}</strong>
+                                <strong>{viewedProfile.following?.length ?? viewedProfile.following ?? 0}</strong>
                                 <span>following</span>
                             </div>
 
                             <div className="profile-stat">
-                                <strong>{viewedProfile.followers}</strong>
+                                <strong>{viewedProfile.followers?.length ?? viewedProfile.followers ?? 0}</strong>
                                 <span>followers</span>
                             </div>
 

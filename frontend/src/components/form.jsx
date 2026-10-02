@@ -4,14 +4,16 @@ import { useState } from "react";
 import asideImage from "../assets/images/aside.png";
 
 import Input from "./input";
+import { apiRequest } from "../api";
+import { useSocial } from "../context/useSocial";
 
 import "../styles/Splash.css";
 
 function validateFormData(formData, isLogin) {
   const { username, email, password, confirmPassword } = formData;
 
-  // Username
-  if (!username.trim()) {
+  // Username is needed to log in, but is created after signup.
+  if (isLogin && !username.trim()) {
     return "Username is required.";
   }
 
@@ -54,6 +56,7 @@ function validateFormData(formData, isLogin) {
 
 function Form({ mode = "login", navigateTo }) {
   const navigate = useNavigate();
+  const { setCurrentUser } = useSocial();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -82,33 +85,20 @@ function Form({ mode = "login", navigateTo }) {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/auth/${isLogin ? "login" : "signup"}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        },
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Something went wrong.");
-      }
-
-      console.log("Server response:", data);
-
-      setLoading(false);
-
+      const requestData = isLogin
+        ? formData
+        : { email: formData.email, password: formData.password };
+      const data = await apiRequest(`/api/auth/${isLogin ? "login" : "signup"}`, {
+        method: "POST",
+        body: JSON.stringify(requestData),
+      });
+      setCurrentUser(data.user);
       navigate(navigateTo);
     } catch (error) {
       console.error("Error submitting form:", error);
-
+      setError(error.message || "Unable to connect to the server. Please try again.");
+    } finally {
       setLoading(false);
-      setError("Unable to connect to the server. Please try again.");
     }
   }
 
@@ -155,20 +145,17 @@ function Form({ mode = "login", navigateTo }) {
                     </span> */}
         </div>
 
-        {/* USERNAME */}
-        <Input
-          label="Username"
-          placeholder="Enter your username"
-          value={formData.username}
-          onChange={(value) => {
-            setFormData({
-              ...formData,
-              username: value,
-            });
-
-            setError("");
-          }}
-        />
+        {isLogin && (
+          <Input
+            label="Username"
+            placeholder="Enter your username"
+            value={formData.username}
+            onChange={(value) => {
+              setFormData({ ...formData, username: value });
+              setError("");
+            }}
+          />
+        )}
 
         {/* EMAIL */}
         <Input

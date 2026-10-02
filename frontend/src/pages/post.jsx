@@ -8,9 +8,7 @@ import {
     BookmarkIcon,
 } from "../components/icon";
 
-import { comments } from "../data/comments";
-
-import { useFollowing } from "../context/followingContext";
+import { useFollowing } from "../context/useFollowing";
 import { useSocial } from "../context/useSocial";
 
 import ProfilePicture from "../components/profilePicture";
@@ -31,15 +29,14 @@ function Post() {
         toggleLike,
         toggleReshare,
         toggleBookmark,
+        addComment,
     } = useSocial();
 
     const post = posts.find(
-        (post) => post.id === Number(postId)
+        (post) => post.id === postId
     );
 
-    const [postComments, setPostComments] = useState(() =>
-        comments.filter((comment) => comment.postId === Number(postId))
-    );
+    const postComments = post?.comments || [];
     const [replyOpen, setReplyOpen] = useState(false);
     const [replyText, setReplyText] = useState("");
     const [replyTarget, setReplyTarget] = useState(null);
@@ -59,24 +56,13 @@ function Post() {
         setReplyOpen(true);
     }
 
-    function handleReplySubmit(event) {
+    async function handleReplySubmit(event) {
         event.preventDefault();
 
         const text = replyText.trim();
         if (!text) return;
 
-        setPostComments((currentComments) => [
-            ...currentComments,
-            {
-                id: Date.now(),
-                postId: Number(postId),
-                replyTo: replyTarget?.id ?? null,
-                username: profile.username,
-                handle: `@${profile.username}`,
-                time: "now",
-                text,
-            },
-        ]);
+        await addComment(postId, { text, replyTo: replyTarget?.id ?? null });
         setReplyText("");
         setReplyTarget(null);
         setReplyOpen(false);
@@ -187,7 +173,7 @@ function Post() {
                         onClick={() => toggleLike(post.id)}
                     >
                         <LikeIcon />
-                        <span>{post.likes}</span>
+                        <span>{post.likes.length}</span>
                     </button>
 
                     <button

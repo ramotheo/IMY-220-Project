@@ -6,7 +6,7 @@ import { useSocial } from "../context/useSocial";
 import "../styles/home.css";
 
 function Home() {
-    const { posts } = useSocial();
+    const { posts, loading, error } = useSocial();
     const publicPosts = posts.filter((post) => !post.hidden && !post.locked);
 
     return (
@@ -14,7 +14,9 @@ function Home() {
             <SiteHeader />
 
             <section className="feed">
-                {publicPosts.map((post) => (
+                {loading ? <p role="status">Loading posts...</p> : null}
+                {!loading && error ? <p role="alert">{error}</p> : null}
+                {!loading && !error && publicPosts.map((post) => (
                     <PostCard
                         key={post.id}
                         post={post}

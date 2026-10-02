@@ -1,16 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-
-import {
-    UserIcon,
-    MoreIcon,
-} from "./icon";
-
 import ProfilePicture from "./profilePicture";
+import { UserIcon } from "./icon";
 
-import { useFollowing } from "../context/followingContext";
-import { users } from "../data/users";
+import { useSocial } from "../context/useSocial";
 
 function PostHeader({ username }) {
+    const { users } = useSocial();
     const user = users.find(
         (user) => user.username === username
     );

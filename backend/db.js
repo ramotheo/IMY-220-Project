@@ -12,10 +12,10 @@ export async function connectToDatabase() {
     // Reuse existing connection if already established
     if (db) return db;
 
-    const uri = process.env.MONGO_URI;
+    const uri = process.env.MONGODB_URI;
 
     if (!uri) {
-        throw new Error("MONGO_URI is not defined in the environment variables.");
+        throw new Error("MONGODB_URI is not defined in the environment variables.");
     }
 
     try {
@@ -27,7 +27,7 @@ export async function connectToDatabase() {
 
         // Connect to the MongoDB cluster
         await client.connect();
-        console.log("Connected to MongoDB successfully");
+        console.log("Successfully connected to MongoDB");
 
         // Specify the database name
         db = client.db("astrea");

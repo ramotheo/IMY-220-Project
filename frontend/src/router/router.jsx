@@ -17,8 +17,8 @@ import { SocialProvider } from "../context/socialContext";
 export default function Router() {
     return (
         <BrowserRouter>
-            <FollowingProvider>
-                <SocialProvider>
+            <SocialProvider>
+                <FollowingProvider>
                     <Routes>
                         <Route path="/" element={<Login />} />
                         <Route path="/login" element={<Login />} />
@@ -33,8 +33,8 @@ export default function Router() {
                         <Route path="/post/:postId" element={<Post />}/>
                         <Route path="*" element={<NotFound />} />
                     </Routes>
-                </SocialProvider>
-            </FollowingProvider>
+                </FollowingProvider>
+            </SocialProvider>
         </BrowserRouter>
     );
 }

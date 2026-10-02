@@ -1,11 +1,9 @@
-import { Link } from "react-router-dom";
-
 import Form from "../../components/form";
 
 function Signup() {
     return (
         <>
-            <Form mode="signup" navigateTo="/" />
+            <Form mode="signup" navigateTo="/profile/edit" />
         </>
     );
 }

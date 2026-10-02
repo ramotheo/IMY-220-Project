@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 import SiteHeader from "../components/siteHeader";
 import {
     SearchIcon,
-    UserIcon,
 } from "../components/icon";
+import ProfilePicture from "../components/profilePicture";
 
 import { useSocial } from "../context/useSocial";
 
@@ -13,22 +13,10 @@ import "../styles/explore.css";
 
 function Explore() {
     const [search, setSearch] = useState("");
-    const { posts } = useSocial();
+    const { posts, users, loading, error } = useSocial();
     const publicPosts = posts.filter((post) => !post.hidden && !post.locked);
-
-    /*
-     * Get unique usernames from the posts.
-     *
-     * This means we don't need a separate users.js file yet.
-     */
-    const users = [
-        ...new Set(
-            publicPosts.map((post) => post.username)
-        ),
-    ];
-
-    const filteredUsers = users.filter((username) =>
-        username
+    const filteredUsers = users.filter((user) =>
+        `${user.username} ${user.name}`
             .toLowerCase()
             .includes(search.toLowerCase())
     );
@@ -53,31 +41,29 @@ function Explore() {
                 </div>
 
                 {/* ====================== RESULTS ====================== */}
-                {search.trim() !== "" ? (
+                {loading ? (
+                    <p role="status">Loading from database...</p>
+                ) : error ? (
+                    <p role="alert">{error}</p>
+                ) : search.trim() !== "" ? (
                     <section className="explore-results">
                         {filteredUsers.length > 0 ? (
-
-                            filteredUsers.map((username) => (
+                            filteredUsers.map((user) => (
                                 <Link
-                                    to={`/profile/${username}`}
+                                    to={`/profile/${encodeURIComponent(user.username)}`}
                                     className="explore-user"
-                                    key={username}
+                                    key={user._id}
                                 >
                                     <div className="explore-user-avatar">
-                                        <UserIcon />
+                                        <ProfilePicture username={user.username} />
                                     </div>
 
                                     <div className="explore-user-info">
-                                        <strong>
-                                            {username}
-                                        </strong>
+                                        <strong>{user.username}</strong>
 
                                         <span>
                                             Astrea user •{" "}
-                                            {publicPosts.filter(
-                                                (post) =>
-                                                    post.username === username
-                                            ).length}{" "}
+                                            {publicPosts.filter((post) => post.authorId === user._id).length}{" "}
                                             posts
                                         </span>
                                     </div>

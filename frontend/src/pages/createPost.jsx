@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import SiteHeader from "../components/siteHeader";
@@ -9,21 +9,35 @@ import "../styles/account.css";
 function CreatePost() {
     const navigate = useNavigate();
     const { createPost } = useSocial();
-    const [image, setImage] = useState("");
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState("");
     const [caption, setCaption] = useState("");
     const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    function handleSubmit(event) {
+    useEffect(() => {
+        if (!imagePreview) return undefined;
+        return () => URL.revokeObjectURL(imagePreview);
+    }, [imagePreview]);
+
+    async function handleSubmit(event) {
         event.preventDefault();
         const cleanCaption = caption.trim();
 
-        if (!image.trim() || !cleanCaption) {
-            setError("Add an image URL and a caption to publish.");
+        if (!imageFile || !cleanCaption) {
+            setError("Choose an image and add a caption to publish.");
             return;
         }
 
-        createPost({ image: image.trim(), caption: cleanCaption });
-        navigate("/profile");
+        setIsSubmitting(true);
+        try {
+            await createPost({ imageFile, caption: cleanCaption });
+            navigate("/profile");
+        } catch (requestError) {
+            setError(requestError.message);
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     return (
@@ -38,19 +52,28 @@ function CreatePost() {
 
                 <form className="account-form" onSubmit={handleSubmit}>
                     <label>
-                        Image URL
+                        Image
                         <input
-                            type="url"
-                            value={image}
-                            onChange={(event) => setImage(event.target.value)}
-                            placeholder="https://example.com/image.jpg"
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => {
+                                const file = event.target.files?.[0] || null;
+                                if (file && file.size > 5 * 1024 * 1024) {
+                                    setError("Choose an image smaller than 5 MB.");
+                                    event.target.value = "";
+                                    return;
+                                }
+                                setImageFile(file);
+                                setImagePreview(file ? URL.createObjectURL(file) : "");
+                                setError("");
+                            }}
                             required
                         />
                     </label>
 
-                    {image && (
+                    {imagePreview && (
                         <div className="post-preview">
-                            <img src={image} alt="Post preview" />
+                            <img src={imagePreview} alt="Post preview" />
                         </div>
                     )}
 
@@ -85,8 +108,9 @@ function CreatePost() {
                         <button
                             type="submit"
                             className="account-primary-button"
+                            disabled={isSubmitting || !imageFile || !caption.trim()}
                         >
-                            Publish post
+                            {isSubmitting ? "Publishing..." : "Publish post"}
                         </button>
                     </div>
                 </form>

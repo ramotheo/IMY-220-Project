@@ -81,20 +81,32 @@ async function seedDatabase() {
     fs.mkdirSync(uploadDirectory);
   }
 
-    // Hash passwords
-    const hashedUsers = [];
+  // Hash passwords
+  const hashedUsers = [];
 
-    for (const user of users) {
-        const hashedPassword = await bcrypt.hash(user.password, 10);
+  for (const user of users) {
+    const hashedPassword = await bcrypt.hash(user.password, 10);
 
-        hashedUsers.push({
-            username: user.username,
-            email: user.email,
-            password: hashedPassword,
-        });
-    }
+    hashedUsers.push({
+      username: user.username,
+      email: user.email,
+      password: hashedPassword,
+      name: user.name || user.username,
+      profilePicture: user.profilePicture || null,
+      bio: user.bio || "",
+      followers: [],
+      following: [],
+      createdAt: new Date(),
+    });
+  }
 
-    await usersCollection.insertMany(hashedUsers);
+  const insertedUsers = await usersCollection.insertMany(hashedUsers);
+  const userIdsByUsername = new Map(
+    hashedUsers.map((user, index) => [
+      user.username,
+      insertedUsers.insertedIds[index],
+    ])
+  );
 
   console.log(`${users.length} users inserted.`);
 
@@ -113,11 +125,12 @@ async function seedDatabase() {
       const imageIndex = Math.floor(Math.random() * imageUrls.length);
 
       posts.push({
-        username: user.username,
+        authorId: userIdsByUsername.get(user.username),
         caption: `This is ${user.username}'s photo ${i + 1}! 📸`,
         image: `seed-${imageIndex + 1}.jpg`,
-        likes: 0,
+        likes: [],
         comments: [],
+        createdAt: new Date(),
       });
     }
   }

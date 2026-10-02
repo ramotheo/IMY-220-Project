@@ -1,144 +1,288 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { posts as seedPosts } from "../data/posts";
+import { apiRequest, getImageUrl } from "../api";
 import { SocialContext } from "./socialContextValue";
 
-const STORAGE_KEY = "astrea-social-state";
-const DEFAULT_PROFILE = {
-    username: "motheom",
-    name: "Motheo Morena",
-    profilePicture:
-        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=90",
-    following: 600,
-    followers: "23.3k",
-    likes: "800k",
-    bio: "Exploring the world, one postcard at a time.",
+const EMPTY_PROFILE = {
+    _id: "",
+    username: "",
+    name: "",
+    profilePicture: "",
+    bio: "",
+    following: [],
+    followers: [],
+    likes: 0,
 };
 
-const DEFAULT_STATE = {
-    profile: DEFAULT_PROFILE,
-    posts: seedPosts.map((post) => ({
-        ...post,
-        hidden: false,
-        locked: false,
-    })),
-    likedPostIds: [],
-    bookmarkedPostIds: [],
-    resharedPostIds: [],
-};
-
-function loadState() {
+function loadCurrentUser() {
     try {
-        const savedState = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (savedState?.profile && Array.isArray(savedState.posts)) {
-            return { ...DEFAULT_STATE, ...savedState };
-        }
+        return JSON.parse(localStorage.getItem("astrea-user")) || EMPTY_PROFILE;
     } catch {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem("astrea-user");
+        return EMPTY_PROFILE;
     }
-
-    return DEFAULT_STATE;
 }
 
 export function SocialProvider({ children }) {
-    const [socialState, setSocialState] = useState(loadState);
+    const [profile, setProfile] = useState(loadCurrentUser);
+    const [users, setUsers] = useState([]);
+    const [posts, setPosts] = useState([]);
+    const [likedPostIds, setLikedPostIds] = useState([]);
+    const [bookmarkedPostIds, setBookmarkedPostIds] = useState([]);
+    const [resharedPostIds, setResharedPostIds] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const normalizePost = useCallback((post) => {
+        const createdAt = post.createdAt ? new Date(post.createdAt) : new Date();
+        return {
+            ...post,
+            id: post.id || post._id,
+            image: getImageUrl(post.image),
+            comments: (post.comments || []).map((comment) => ({
+                ...comment,
+                id: comment.id || comment._id,
+                postId: post.id || post._id,
+            })),
+            time: createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            date: createdAt.toLocaleDateString(),
+        };
+    }, []);
+
+    const normalizeUser = useCallback((user) => ({
+        ...user,
+        profilePicture: getImageUrl(user.profilePicture),
+    }), []);
+
+    const refreshData = useCallback(async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const [fetchedPosts, fetchedUsers] = await Promise.all([
+                apiRequest("/api/posts"),
+                apiRequest("/api/users"),
+            ]);
+            const normalizedPosts = fetchedPosts.map(normalizePost);
+            setPosts(normalizedPosts);
+            const normalizedUsers = fetchedUsers.map(normalizeUser);
+            setUsers(normalizedUsers);
+
+            setProfile((current) => {
+                if (!current?._id) return current;
+                const freshProfile = normalizedUsers.find((user) => user._id === current._id);
+                if (!freshProfile) return current;
+                const updatedProfile = { ...freshProfile, email: current.email };
+                localStorage.setItem("astrea-user", JSON.stringify(updatedProfile));
+                return updatedProfile;
+            });
+            const currentUser = loadCurrentUser();
+            if (currentUser?._id) {
+                setLikedPostIds(normalizedPosts
+                    .filter((post) => post.likes.includes(currentUser._id))
+                    .map((post) => post.id));
+            }
+        } catch (requestError) {
+            setError(requestError.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [normalizePost, normalizeUser]);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(socialState));
-    }, [socialState]);
+        let cancelled = false;
+        Promise.all([
+            apiRequest("/api/posts"),
+            apiRequest("/api/users"),
+        ]).then(([fetchedPosts, fetchedUsers]) => {
+            if (cancelled) return;
+            const normalizedPosts = fetchedPosts.map(normalizePost);
+            setPosts(normalizedPosts);
+            const normalizedUsers = fetchedUsers.map(normalizeUser);
+            setUsers(normalizedUsers);
+            setProfile((current) => {
+                if (!current?._id) return current;
+                const freshProfile = normalizedUsers.find((user) => user._id === current._id);
+                if (!freshProfile) return current;
+                const updatedProfile = { ...freshProfile, email: current.email };
+                localStorage.setItem("astrea-user", JSON.stringify(updatedProfile));
+                return updatedProfile;
+            });
+            const currentUser = loadCurrentUser();
+            if (currentUser?._id) {
+                setLikedPostIds(normalizedPosts
+                    .filter((post) => post.likes.includes(currentUser._id))
+                    .map((post) => post.id));
+            }
+        }).catch((requestError) => {
+            if (!cancelled) setError(requestError.message);
+        }).finally(() => {
+            if (!cancelled) setLoading(false);
+        });
 
-    function updateProfile(profile) {
-        setSocialState((current) => ({
-            ...current,
-            profile,
-            posts: current.posts.map((post) =>
-                post.username === current.profile.username
-                    ? { ...post, username: profile.username }
-                    : post
-            ),
-        }));
+        return () => {
+            cancelled = true;
+        };
+    }, [normalizePost, normalizeUser]);
+
+    function setCurrentUser(user) {
+        const currentUser = user || EMPTY_PROFILE;
+        localStorage.setItem("astrea-user", JSON.stringify(currentUser));
+        setProfile(currentUser);
+        setLikedPostIds(posts
+            .filter((post) => post.likes.includes(currentUser._id))
+            .map((post) => post.id));
     }
 
-    function createPost({ image, caption }) {
-        setSocialState((current) => ({
-            ...current,
-            posts: [
-                {
-                    id: Date.now(),
-                    username: current.profile.username,
-                    image,
-                    caption,
-                    likes: "0",
-                    comments: 0,
-                    views: "0",
-                    time: new Date().toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    }),
-                    date: new Date().toLocaleDateString(),
-                    hidden: false,
-                    locked: false,
-                },
-                ...current.posts,
-            ],
-        }));
+    async function createPost({ imageFile, caption }) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        formData.append("userId", profile._id);
+        formData.append("caption", caption);
+        const post = await apiRequest("/api/upload", {
+            method: "POST",
+            body: formData,
+        });
+        const normalizedPost = normalizePost(post);
+        setPosts((current) => [normalizedPost, ...current]);
+        return normalizedPost;
     }
 
-    function deletePost(postId) {
-        setSocialState((current) => ({
-            ...current,
-            posts: current.posts.filter((post) => post.id !== postId),
-            likedPostIds: current.likedPostIds.filter((id) => id !== postId),
-            bookmarkedPostIds: current.bookmarkedPostIds.filter((id) => id !== postId),
-            resharedPostIds: current.resharedPostIds.filter((id) => id !== postId),
-        }));
+    async function updateProfile(updatedProfile) {
+        const savedProfile = await apiRequest(`/api/users/${profile._id}`, {
+            method: "PATCH",
+            body: JSON.stringify(updatedProfile),
+        });
+        const nextProfile = {
+            ...normalizeUser(savedProfile),
+            email: profile.email,
+            likes: profile.likes || 0,
+        };
+        setCurrentUser(nextProfile);
+        setUsers((current) => current.map((user) =>
+            user._id === nextProfile._id ? nextProfile : user
+        ));
+        setPosts((current) => current.map((post) =>
+            post.authorId === nextProfile._id
+                ? { ...post, username: nextProfile.username }
+                : post
+        ));
+        return nextProfile;
+    }
+
+    async function uploadProfilePicture(imageFile) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const savedProfile = await apiRequest(`/api/users/${profile._id}/profile-picture`, {
+            method: "POST",
+            body: formData,
+        });
+        const nextProfile = {
+            ...normalizeUser(savedProfile),
+            email: profile.email,
+        };
+        setCurrentUser(nextProfile);
+        setUsers((current) => current.map((user) =>
+            user._id === nextProfile._id ? nextProfile : user
+        ));
+        return nextProfile;
+    }
+
+    async function deletePost(postId) {
+        await apiRequest(`/api/posts/${postId}`, {
+            method: "DELETE",
+            body: JSON.stringify({ userId: profile._id }),
+        });
+        setPosts((current) => current.filter((post) => post.id !== postId));
+        setLikedPostIds((current) => current.filter((id) => id !== postId));
+        setBookmarkedPostIds((current) => current.filter((id) => id !== postId));
+        setResharedPostIds((current) => current.filter((id) => id !== postId));
     }
 
     function togglePostState(key, postId) {
-        setSocialState((current) => {
-            const selectedIds = current[key];
-            return {
-                ...current,
-                [key]: selectedIds.includes(postId)
-                    ? selectedIds.filter((id) => id !== postId)
-                    : [...selectedIds, postId],
-            };
+        const setter = key === "bookmarkedPostIds" ? setBookmarkedPostIds : setResharedPostIds;
+        setter((current) => current.includes(postId)
+            ? current.filter((id) => id !== postId)
+            : [...current, postId]
+        );
+    }
+
+    async function toggleLike(postId) {
+        if (!profile._id) return;
+        const updatedPost = await apiRequest(`/api/posts/${postId}/like`, {
+            method: "PATCH",
+            body: JSON.stringify({ userId: profile._id }),
         });
+        const normalizedPost = normalizePost(updatedPost);
+        setPosts((current) => current.map((post) =>
+            post.id === postId ? normalizedPost : post
+        ));
+        setLikedPostIds((current) => normalizedPost.likes.includes(profile._id)
+            ? [...new Set([...current, postId])]
+            : current.filter((id) => id !== postId)
+        );
     }
 
-    function togglePostVisibility(postId, property) {
-        setSocialState((current) => ({
-            ...current,
-            posts: current.posts.map((post) =>
-                post.id === postId
-                    ? { ...post, [property]: !post[property] }
-                    : post
-            ),
-        }));
+    async function addComment(postId, { text, replyTo }) {
+        const updatedPost = await apiRequest(`/api/posts/${postId}/comments`, {
+            method: "POST",
+            body: JSON.stringify({ userId: profile._id, text, replyTo }),
+        });
+        const normalizedPost = normalizePost(updatedPost);
+        setPosts((current) => current.map((post) =>
+            post.id === postId ? normalizedPost : post
+        ));
+        return normalizedPost.comments;
     }
 
-    function deleteAccount() {
-        const username = socialState.profile.username;
-        setSocialState((current) => ({
-            ...current,
-            profile: { ...DEFAULT_PROFILE, username: "deleted" },
-            posts: current.posts.filter((post) => post.username !== username),
-            likedPostIds: [],
-            bookmarkedPostIds: [],
-            resharedPostIds: [],
-        }));
+    async function togglePostVisibility(postId, property) {
+        const post = posts.find((item) => item.id === postId);
+        if (!post) return;
+        const updatedPost = await apiRequest(`/api/posts/${postId}/visibility`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                userId: profile._id,
+                property,
+                value: !post[property],
+            }),
+        });
+        const normalizedPost = normalizePost(updatedPost);
+        setPosts((current) => current.map((item) =>
+            item.id === postId ? normalizedPost : item
+        ));
+    }
+
+    async function deleteAccount() {
+        await apiRequest(`/api/users/${profile._id}`, { method: "DELETE" });
+        localStorage.removeItem("astrea-user");
+        setProfile(EMPTY_PROFILE);
+        setUsers((current) => current.filter((user) => user._id !== profile._id));
+        setPosts((current) => current.filter((post) => post.authorId !== profile._id));
+        setLikedPostIds([]);
+        setBookmarkedPostIds([]);
+        setResharedPostIds([]);
     }
 
     const value = {
-        ...socialState,
-        isLiked: (postId) => socialState.likedPostIds.includes(postId),
-        isBookmarked: (postId) => socialState.bookmarkedPostIds.includes(postId),
-        isReshared: (postId) => socialState.resharedPostIds.includes(postId),
-        toggleLike: (postId) => togglePostState("likedPostIds", postId),
+        profile,
+        users,
+        posts,
+        likedPostIds,
+        bookmarkedPostIds,
+        resharedPostIds,
+        loading,
+        error,
+        refreshData,
+        setCurrentUser,
+        isLiked: (postId) => likedPostIds.includes(postId),
+        isBookmarked: (postId) => bookmarkedPostIds.includes(postId),
+        isReshared: (postId) => resharedPostIds.includes(postId),
+        toggleLike,
         toggleBookmark: (postId) => togglePostState("bookmarkedPostIds", postId),
         toggleReshare: (postId) => togglePostState("resharedPostIds", postId),
+        addComment,
         createPost,
         updateProfile,
+        uploadProfilePicture,
         deletePost,
         togglePostVisibility,
         deleteAccount,

@@ -1,7 +1,7 @@
 import PostCard from "../components/postCard";
 import SiteHeader from "../components/siteHeader";
 
-import { useFollowing } from "../context/followingContext";
+import { useFollowing } from "../context/useFollowing";
 import { useSocial } from "../context/useSocial";
 
 import "../styles/home.css";

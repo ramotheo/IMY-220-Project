@@ -1,37 +1,29 @@
-import {
-    createContext,
-    useContext,
-    useState,
-} from "react";
-
-const FollowingContext = createContext(null);
+import { apiRequest } from "../api";
+import { FollowingContext } from "./followingContextValue";
+import { useSocial } from "./useSocial";
 
 export function FollowingProvider({ children }) {
-
-    const [following, setFollowing] = useState([
-        "alex",
-        "sarah",
-        "jordan",
-    ]);
+    const { profile, users, setCurrentUser, refreshData } = useSocial();
+    const followingIds = profile.following || [];
+    const following = users
+        .filter((user) => followingIds.includes(user._id))
+        .map((user) => user.username);
 
     function isFollowing(username) {
-        return following.includes(username);
+        const user = users.find((item) => item.username === username);
+        return user ? followingIds.includes(user._id) : false;
     }
 
-    function toggleFollow(username) {
-        setFollowing((currentFollowing) => {
+    async function toggleFollow(username) {
+        const targetUser = users.find((user) => user.username === username);
+        if (!profile._id || !targetUser) return;
 
-            if (currentFollowing.includes(username)) {
-                return currentFollowing.filter(
-                    (user) => user !== username
-                );
-            }
-
-            return [
-                ...currentFollowing,
-                username,
-            ];
+        const updatedProfile = await apiRequest(`/api/users/${profile._id}/follow`, {
+            method: "POST",
+            body: JSON.stringify({ targetUserId: targetUser._id }),
         });
+        setCurrentUser({ ...updatedProfile, email: profile.email });
+        await refreshData();
     }
 
     return (
@@ -45,8 +37,4 @@ export function FollowingProvider({ children }) {
             {children}
         </FollowingContext.Provider>
     );
-}
-
-export function useFollowing() {
-    return useContext(FollowingContext);
 }

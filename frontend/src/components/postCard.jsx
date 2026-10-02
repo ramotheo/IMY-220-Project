@@ -27,18 +27,13 @@ function PostCard({ post }) {
     } = useSocial();
 
     const liked = isLiked(post.id);
-    const commented = post.comments > 0;
+    const commented = post.comments.length > 0;
     const bookmarked = isBookmarked(post.id);
     const reshared = isReshared(post.id);
     const isOwner = post.username === profile.username;
 
     function getLikeCount() {
-        const match = String(post.likes).match(/^([\d.]+)(k|m)?$/i);
-        if (!match) return post.likes;
-
-        const suffix = match[2]?.toLowerCase();
-        const multiplier = suffix === "m" ? 1000000 : suffix === "k" ? 1000 : 1;
-        const count = Number(match[1]) * multiplier + (liked ? 1 : 0);
+        const count = post.likes.length;
         if (count >= 1000000) return `${(count / 1000000).toFixed(1)}m`;
         if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
         return String(count);
@@ -125,7 +120,7 @@ function PostCard({ post }) {
                     aria-label="View comments"
                 >
                     <CommentIcon />
-                    <span>{post.comments}</span>
+                    <span>{post.comments.length}</span>
                 </Link>
 
                 <button
