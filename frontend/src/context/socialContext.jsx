@@ -11,6 +11,8 @@ const EMPTY_PROFILE = {
     bio: "",
     following: [],
     followers: [],
+    bookmarkedPostIds: [],
+    resharedPostIds: [],
     likes: 0,
 };
 
@@ -31,8 +33,12 @@ export function SocialProvider({ children }) {
     const [users, setUsers] = useState([]);
     const [posts, setPosts] = useState([]);
     const [likedPostIds, setLikedPostIds] = useState([]);
-    const [bookmarkedPostIds, setBookmarkedPostIds] = useState([]);
-    const [resharedPostIds, setResharedPostIds] = useState([]);
+    const [bookmarkedPostIds, setBookmarkedPostIds] = useState(() =>
+        loadCurrentUser().bookmarkedPostIds || []
+    );
+    const [resharedPostIds, setResharedPostIds] = useState(() =>
+        loadCurrentUser().resharedPostIds || []
+    );
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -79,6 +85,11 @@ export function SocialProvider({ children }) {
                 return updatedProfile;
             });
             const currentUser = loadCurrentUser();
+            const freshProfile = normalizedUsers.find((user) => user._id === currentUser?._id);
+            if (freshProfile) {
+                setBookmarkedPostIds(freshProfile.bookmarkedPostIds || []);
+                setResharedPostIds(freshProfile.resharedPostIds || []);
+            }
             if (currentUser?._id) {
                 setLikedPostIds(normalizedPosts
                     .filter((post) => post.likes.includes(currentUser._id))
@@ -111,6 +122,11 @@ export function SocialProvider({ children }) {
                 return updatedProfile;
             });
             const currentUser = loadCurrentUser();
+            const freshProfile = normalizedUsers.find((user) => user._id === currentUser?._id);
+            if (freshProfile) {
+                setBookmarkedPostIds(freshProfile.bookmarkedPostIds || []);
+                setResharedPostIds(freshProfile.resharedPostIds || []);
+            }
             if (currentUser?._id) {
                 setLikedPostIds(normalizedPosts
                     .filter((post) => post.likes.includes(currentUser._id))
@@ -136,6 +152,8 @@ export function SocialProvider({ children }) {
         setLikedPostIds(posts
             .filter((post) => post.likes.includes(currentUser._id))
             .map((post) => post.id));
+        setBookmarkedPostIds(currentUser.bookmarkedPostIds || []);
+        setResharedPostIds(currentUser.resharedPostIds || []);
     }
 
     async function createPost({ imageFile, caption }) {
@@ -203,12 +221,21 @@ export function SocialProvider({ children }) {
         setResharedPostIds((current) => current.filter((id) => id !== postId));
     }
 
-    function togglePostState(key, postId) {
-        const setter = key === "bookmarkedPostIds" ? setBookmarkedPostIds : setResharedPostIds;
-        setter((current) => current.includes(postId)
-            ? current.filter((id) => id !== postId)
-            : [...current, postId]
-        );
+    async function togglePostState(collection, postId) {
+        if (!profile._id) return;
+        const updatedUser = await apiRequest(`/api/users/${profile._id}/post-state`, {
+            method: "PATCH",
+            body: JSON.stringify({ postId, collection }),
+        });
+        const nextProfile = {
+            ...normalizeUser(updatedUser),
+            email: profile.email,
+            likes: profile.likes || 0,
+        };
+        setCurrentUser(nextProfile);
+        setUsers((current) => current.map((user) =>
+            user._id === nextProfile._id ? nextProfile : user
+        ));
     }
 
     async function toggleLike(postId) {

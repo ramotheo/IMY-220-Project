@@ -25,8 +25,10 @@ function serializeUser(user, likes = 0) {
         name: user.name || user.username,
         profilePicture: user.profilePicture || "",
         bio: user.bio || "",
-        following: user.following || [],
-        followers: user.followers || [],
+        following: (user.following || []).map((id) => id.toString()),
+        followers: (user.followers || []).map((id) => id.toString()),
+        bookmarkedPostIds: (user.bookmarkedPostIds || []).map((id) => id.toString()),
+        resharedPostIds: (user.resharedPostIds || []).map((id) => id.toString()),
         likes,
         createdAt: user.createdAt,
     };
@@ -244,6 +246,45 @@ app.post("/api/users/:userId/follow", async (req, res) => {
     } catch (error) {
         console.error("Error updating follow state:", error);
         res.status(500).json({ message: "Unable to update follow state." });
+    }
+});
+
+app.patch("/api/users/:userId/post-state", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { postId, collection } = req.body;
+        if (!ObjectId.isValid(userId) || !ObjectId.isValid(postId) ||
+            !["bookmarkedPostIds", "resharedPostIds"].includes(collection)) {
+            return res.status(400).json({ message: "Invalid profile post state." });
+        }
+
+        const db = getDatabase();
+        const userObjectId = new ObjectId(userId);
+        const postObjectId = new ObjectId(postId);
+        const usersCollection = db.collection("users");
+        const [user, post] = await Promise.all([
+            usersCollection.findOne({ _id: userObjectId }),
+            db.collection("posts").findOne({ _id: postObjectId }),
+        ]);
+        if (!user || !post) {
+            return res.status(404).json({ message: "User or post not found." });
+        }
+
+        const alreadySelected = (user[collection] || []).some(
+            (id) => id.toString() === postId
+        );
+        await usersCollection.updateOne(
+            { _id: userObjectId },
+            alreadySelected
+                ? { $pull: { [collection]: postObjectId } }
+                : { $addToSet: { [collection]: postObjectId } }
+        );
+
+        const updatedUser = await usersCollection.findOne({ _id: userObjectId });
+        res.json(serializeUser(updatedUser));
+    } catch (error) {
+        console.error("Error updating saved or reshared posts:", error);
+        res.status(500).json({ message: "Unable to update profile post state." });
     }
 });
 
@@ -496,6 +537,8 @@ app.post("/api/auth/signup", async (req, res) => {
             bio: "",
             followers: [],
             following: [],
+            bookmarkedPostIds: [],
+            resharedPostIds: [],
             createdAt: new Date(),
         };
 

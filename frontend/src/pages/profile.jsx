@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import PostCard from "../components/postCard";
 import SiteHeader from "../components/siteHeader";
+import { useFollowing } from "../context/useFollowing";
 
 import { useSocial } from "../context/useSocial";
 
@@ -11,37 +12,37 @@ import "../styles/profile.css";
 function Profile() {
     const [activeTab, setActiveTab] = useState("grid");
     const { username } = useParams();
+    const { isFollowing, toggleFollow } = useFollowing();
     const {
         profile,
         users,
         posts,
-        likedPostIds,
-        bookmarkedPostIds,
-        resharedPostIds,
+        loading,
     } = useSocial();
     const viewedUsername = username || profile.username;
     const isOwnProfile = viewedUsername === profile.username;
     const viewedProfile = isOwnProfile
         ? profile
-        : users.find((user) => user.username === viewedUsername) || {
-            username: viewedUsername,
-            name: viewedUsername,
-            profilePicture: "",
-            bio: "Astrea member.",
-            following: 0,
-            followers: "0",
-            likes: "0",
-        };
+        : users.find((user) => user.username === viewedUsername);
+
+    if (!viewedProfile) {
+        return (
+            <div className="profile-page">
+                <SiteHeader />
+                <main className="profile-content">
+                    <p role="status">{loading ? "Loading profile..." : "Profile not found."}</p>
+                </main>
+            </div>
+        );
+    }
 
     const tabs = [
         { id: "grid", label: "Grid" },
+        { id: "reshared", label: "Reshared" },
+        { id: "liked", label: "Liked" },
+        { id: "bookmarked", label: "Saved" },
         ...(isOwnProfile
-            ? [
-                { id: "hidden", label: "Hidden / Locked" },
-                { id: "reshared", label: "Reshared" },
-                { id: "liked", label: "Liked" },
-                { id: "bookmarked", label: "Saved" },
-            ]
+            ? [{ id: "hidden", label: "Hidden / Locked" }]
             : []),
     ];
 
@@ -57,14 +58,17 @@ function Profile() {
 
             case "reshared":
                 return posts.filter(
-                    (post) => resharedPostIds.includes(post.id) && !post.hidden && !post.locked
+                    (post) => (viewedProfile.resharedPostIds || []).includes(post.id) &&
+                        !post.hidden && !post.locked
                 );
 
             case "liked":
-                return posts.filter((post) => likedPostIds.includes(post.id) && !post.hidden && !post.locked);
+                return posts.filter((post) => (post.likes || []).includes(viewedProfile._id) &&
+                    !post.hidden && !post.locked);
 
             case "bookmarked":
-                return posts.filter((post) => bookmarkedPostIds.includes(post.id) && !post.hidden && !post.locked);
+                return posts.filter((post) => (viewedProfile.bookmarkedPostIds || []).includes(post.id) &&
+                    !post.hidden && !post.locked);
 
             case "grid":
             default:
@@ -125,20 +129,30 @@ function Profile() {
                     <div className="profile-bio">
                         <h1>{viewedProfile.name}</h1>
                         <p>@{viewedProfile.username}</p>
-                        <span>{viewedProfile.bio}</span>
+                        <span>{viewedProfile.bio || "No bio yet."}</span>
                     </div>
 
                     {/* Actions */}
-                    {isOwnProfile && (
-                        <div className="profile-actions">
+                    <div className="profile-actions">
+                        {isOwnProfile ? (
+                            <>
                             <Link to="/profile/edit" className="profile-button">
                                 Edit Profile
                             </Link>
                             <Link to="/create" className="profile-button">
                                 Create Post
                             </Link>
-                        </div>
-                    )}
+                            </>
+                        ) : (
+                            <button
+                                type="button"
+                                className="profile-button"
+                                onClick={() => toggleFollow(viewedUsername)}
+                            >
+                                {isFollowing(viewedUsername) ? "Following" : "Follow"}
+                            </button>
+                        )}
+                    </div>
 
                 </section>
 

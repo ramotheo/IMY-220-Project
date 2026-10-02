@@ -169,6 +169,73 @@
     background: var(--color-danger-surface);
 }
 
+.delete-account-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: var(--color-overlay);
+}
+
+.delete-account-dialog {
+    width: min(100%, 520px);
+    padding: 22px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow-dialog);
+}
+
+.delete-account-dialog h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.delete-account-dialog > p {
+    margin: 10px 0 14px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.delete-account-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.delete-account-dialog-actions button {
+    min-height: 36px;
+    padding: 8px 18px;
+    border: 0;
+    border-radius: var(--radius-control);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.delete-account-dialog-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.delete-account-cancel {
+    background: var(--color-page);
+}
+
+.delete-account-confirm {
+    background: var(--color-accent);
+}
+
+.delete-account-dialog-actions button:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 3px;
+}
+
 @media (max-width: 520px) {
     .account-content {
         width: calc(100% - 32px);

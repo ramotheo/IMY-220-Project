@@ -96,6 +96,8 @@ async function seedDatabase() {
       bio: user.bio || "",
       followers: [],
       following: [],
+      bookmarkedPostIds: [],
+      resharedPostIds: [],
       createdAt: new Date(),
     });
   }

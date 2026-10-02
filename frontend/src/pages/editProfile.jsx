@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import Navigation from "../components/navigation";
+import SiteHeader from "../components/siteHeader";
 import { useSocial } from "../context/useSocial";
 
 import "../styles/account.css";
@@ -18,11 +18,30 @@ function EditProfile() {
     const [picturePreview, setPicturePreview] = useState("");
     const [error, setError] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
+    const cancelDeleteRef = useRef(null);
 
     useEffect(() => {
         if (!picturePreview) return undefined;
         return () => URL.revokeObjectURL(picturePreview);
     }, [picturePreview]);
+
+    useEffect(() => {
+        if (!confirmDelete) return undefined;
+
+        cancelDeleteRef.current?.focus();
+        function handleKeyDown(event) {
+            if (event.key === "Escape" && !isDeleting) {
+                setConfirmDelete(false);
+                setDeleteError("");
+            }
+        }
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [confirmDelete, isDeleting]);
 
     function handleChange(event) {
         const { name, value } = event.target;
@@ -75,21 +94,21 @@ function EditProfile() {
     }
 
     async function handleDeleteAccount() {
-        if (!window.confirm("Delete this account and its posts from the database? This cannot be undone.")) {
-            return;
-        }
-
+        setIsDeleting(true);
+        setDeleteError("");
         try {
             await deleteAccount();
             navigate("/login", { replace: true });
         } catch (requestError) {
-            setError(requestError.message);
+            setDeleteError(requestError.message);
+        } finally {
+            setIsDeleting(false);
         }
     }
 
     return (
         <div className="account-page">
-            <Navigation />
+            <SiteHeader />
             <main className="account-content">
                 <header className="account-page-header">
                     <p>YOUR ACCOUNT</p>
@@ -161,11 +180,65 @@ function EditProfile() {
                         <h2>Delete account</h2>
                         <p>Remove this profile and its posts from the database.</p>
                     </div>
-                    <button type="button" onClick={handleDeleteAccount}>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setDeleteError("");
+                            setConfirmDelete(true);
+                        }}
+                    >
                         Delete account
                     </button>
                 </section>
             </main>
+
+            {confirmDelete && (
+                <div
+                    className="delete-account-backdrop"
+                    onClick={(event) => {
+                        if (event.target === event.currentTarget && !isDeleting) {
+                            setConfirmDelete(false);
+                            setDeleteError("");
+                        }
+                    }}
+                >
+                    <section
+                        className="delete-account-dialog"
+                        role="alertdialog"
+                        aria-modal="true"
+                        aria-labelledby="delete-account-title"
+                        aria-describedby="delete-account-description"
+                    >
+                        <h2 id="delete-account-title">Delete account?</h2>
+                        <p id="delete-account-description">
+                            This permanently removes your profile and posts. This action cannot be undone.
+                        </p>
+                        {deleteError && <p className="account-error" role="alert">{deleteError}</p>}
+                        <div className="delete-account-dialog-actions">
+                            <button
+                                ref={cancelDeleteRef}
+                                type="button"
+                                className="delete-account-cancel"
+                                disabled={isDeleting}
+                                onClick={() => {
+                                    setConfirmDelete(false);
+                                    setDeleteError("");
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="delete-account-confirm"
+                                disabled={isDeleting}
+                                onClick={handleDeleteAccount}
+                            >
+                                {isDeleting ? "Deleting..." : "Delete account"}
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
         </div>
     );
 }
