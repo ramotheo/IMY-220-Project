@@ -16,7 +16,10 @@ const EMPTY_PROFILE = {
 
 function loadCurrentUser() {
     try {
-        return JSON.parse(localStorage.getItem("astrea-user")) || EMPTY_PROFILE;
+        const user = JSON.parse(localStorage.getItem("astrea-user"));
+        return user
+            ? { ...user, profilePicture: getImageUrl(user.profilePicture) }
+            : EMPTY_PROFILE;
     } catch {
         localStorage.removeItem("astrea-user");
         return EMPTY_PROFILE;
@@ -125,7 +128,9 @@ export function SocialProvider({ children }) {
     }, [normalizePost, normalizeUser]);
 
     function setCurrentUser(user) {
-        const currentUser = user || EMPTY_PROFILE;
+        const currentUser = user
+            ? normalizeUser(user)
+            : EMPTY_PROFILE;
         localStorage.setItem("astrea-user", JSON.stringify(currentUser));
         setProfile(currentUser);
         setLikedPostIds(posts
@@ -262,6 +267,14 @@ export function SocialProvider({ children }) {
         setResharedPostIds([]);
     }
 
+    function logout() {
+        localStorage.removeItem("astrea-user");
+        setProfile(EMPTY_PROFILE);
+        setLikedPostIds([]);
+        setBookmarkedPostIds([]);
+        setResharedPostIds([]);
+    }
+
     const value = {
         profile,
         users,
@@ -286,6 +299,7 @@ export function SocialProvider({ children }) {
         deletePost,
         togglePostVisibility,
         deleteAccount,
+        logout,
     };
 
     return (
