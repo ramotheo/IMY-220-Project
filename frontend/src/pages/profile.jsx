@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import PostCard from "../components/postCard";
+import ProfilePicture from "../components/profilePicture";
 import SiteHeader from "../components/siteHeader";
 import { useFollowing } from "../context/useFollowing";
 
@@ -11,6 +12,7 @@ import "../styles/profile.css";
 
 function Profile() {
     const [activeTab, setActiveTab] = useState("grid");
+    const [connectionsType, setConnectionsType] = useState("");
     const { username } = useParams();
     const { isFollowing, toggleFollow } = useFollowing();
     const {
@@ -81,6 +83,12 @@ function Profile() {
     }
 
     const visiblePosts = getPosts();
+    const connectionIds = connectionsType === "followers"
+        ? viewedProfile.followers || []
+        : viewedProfile.following || [];
+    const connectionUsers = connectionIds
+        .map((id) => users.find((user) => user._id === id))
+        .filter(Boolean);
 
     return (
         <div className="profile-page">
@@ -107,15 +115,29 @@ function Profile() {
 
                         <div className="profile-stats">
 
-                            <div className="profile-stat">
-                                <strong>{viewedProfile.following?.length ?? viewedProfile.following ?? 0}</strong>
+                            <button
+                                type="button"
+                                className="profile-stat profile-stat-button"
+                                aria-expanded={connectionsType === "following"}
+                                onClick={() => setConnectionsType(
+                                    connectionsType === "following" ? "" : "following"
+                                )}
+                            >
+                                <strong>{viewedProfile.following?.length || 0}</strong>
                                 <span>following</span>
-                            </div>
+                            </button>
 
-                            <div className="profile-stat">
-                                <strong>{viewedProfile.followers?.length ?? viewedProfile.followers ?? 0}</strong>
+                            <button
+                                type="button"
+                                className="profile-stat profile-stat-button"
+                                aria-expanded={connectionsType === "followers"}
+                                onClick={() => setConnectionsType(
+                                    connectionsType === "followers" ? "" : "followers"
+                                )}
+                            >
+                                <strong>{viewedProfile.followers?.length || 0}</strong>
                                 <span>followers</span>
-                            </div>
+                            </button>
 
                             <div className="profile-stat">
                                 <strong>{viewedProfile.likes}</strong>
@@ -124,6 +146,37 @@ function Profile() {
 
                         </div>
                     </div>
+
+                    {connectionsType && (
+                        <section className="profile-connections" aria-labelledby="connections-title">
+                            <header>
+                                <h2 id="connections-title">
+                                    {connectionsType === "followers" ? "Followers" : "Following"}
+                                </h2>
+                                <button type="button" onClick={() => setConnectionsType("")}>
+                                    Close
+                                </button>
+                            </header>
+                            {connectionUsers.length > 0 ? (
+                                <ul>
+                                    {connectionUsers.map((user) => (
+                                        <li key={user._id}>
+                                            <Link to={`/profile/${encodeURIComponent(user.username)}`}>
+                                                <ProfilePicture
+                                                    username={user.username}
+                                                    className="connections-avatar"
+                                                />
+                                                <span>{user.name || user.username}</span>
+                                                <span>@{user.username}</span>
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p>No {connectionsType} yet.</p>
+                            )}
+                        </section>
+                    )}
 
                     {/* Bio */}
                     <div className="profile-bio">

@@ -22,6 +22,7 @@ function Post() {
     const { isFollowing, toggleFollow } = useFollowing();
     const {
         posts,
+        users,
         profile,
         isLiked,
         isReshared,
@@ -46,6 +47,9 @@ function Post() {
     const following = isFollowing(post?.username);
     const liked = post ? isLiked(post.id) : false;
     const reshared = post ? isReshared(post.id) : false;
+    const reshareCount = post
+        ? users.filter((user) => (user.resharedPostIds || []).includes(post.id)).length
+        : 0;
     const bookmarked = post ? isBookmarked(post.id) : false;
     const hasReplied = postComments.some(
         (comment) => comment.postId === post?.id && comment.username === profile.username
@@ -162,7 +166,7 @@ function Post() {
                         onClick={() => toggleReshare(post.id)}
                     >
                         <ReshareIcon />
-                        <span>2</span>
+                        <span>{reshareCount}</span>
                     </button>
 
                     <button

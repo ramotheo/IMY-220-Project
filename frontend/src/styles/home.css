@@ -34,6 +34,12 @@
     width: 100%;
 }
 
+.post-follow-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
 .post-header {
     width: 100%;
 

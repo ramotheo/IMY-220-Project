@@ -10,6 +10,11 @@ import { connectToDatabase, getDatabase } from "./db.js";
 
 const app = express();
 const PORT = 3000;
+const defaultProfilePictures = {
+    motheo: "seed-1.jpg",
+    alex: "seed-2.jpg",
+    sarah: "seed-3.jpg",
+};
 
 app.use(cors());
 app.use(express.json());
@@ -22,7 +27,7 @@ function serializeUser(user, likes = 0) {
         _id: user._id.toString(),
         username: user.username,
         name: user.name || user.username,
-        profilePicture: user.profilePicture || "",
+        profilePicture: user.profilePicture || defaultProfilePictures[user.username] || "",
         bio: user.bio || "",
         following: (user.following || []).map((id) => id.toString()),
         followers: (user.followers || []).map((id) => id.toString()),

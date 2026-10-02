@@ -3,7 +3,7 @@ import { FollowingContext } from "./followingContextValue";
 import { useSocial } from "./useSocial";
 
 export function FollowingProvider({ children }) {
-    const { profile, users, setCurrentUser, refreshData } = useSocial();
+    const { profile, users, setCurrentUser } = useSocial();
     const followingIds = profile.following || [];
     const following = users
         .filter((user) => followingIds.includes(user._id))
@@ -23,7 +23,6 @@ export function FollowingProvider({ children }) {
             body: JSON.stringify({ targetUserId: targetUser._id }),
         });
         setCurrentUser({ ...updatedProfile, email: profile.email });
-        await refreshData();
     }
 
     return (

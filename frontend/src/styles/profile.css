@@ -70,6 +70,24 @@
     gap: 5px;
 }
 
+.profile-stat-button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.profile-stat-button:hover span {
+    color: var(--color-text);
+}
+
+.profile-stat-button:focus-visible {
+    outline: 2px solid var(--color-white);
+    outline-offset: 5px;
+}
+
 .profile-stat strong {
     color: var(--color-text);
     font-size: 26px;
@@ -79,6 +97,82 @@
 .profile-stat span {
     color: var(--color-text-dim);
     font-size: 14px;
+}
+
+.profile-connections {
+    width: min(100%, 440px);
+    max-height: 320px;
+    margin: 24px 0 0 auto;
+    padding: 16px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-small);
+    background: var(--color-surface-profile);
+}
+
+.profile-connections > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.profile-connections h2 {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 16px;
+}
+
+.profile-connections > header button {
+    padding: 5px 9px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-small);
+    background: transparent;
+    color: var(--color-text-profile);
+    font: inherit;
+    cursor: pointer;
+}
+
+.profile-connections ul {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.profile-connections li a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: var(--radius-small);
+    color: var(--color-text-profile);
+    text-decoration: none;
+}
+
+.profile-connections li a:hover {
+    background: var(--color-surface-profile-raised);
+}
+
+.connections-avatar {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border-radius: var(--radius-pill);
+    object-fit: cover;
+}
+
+.profile-connections li a span:last-child {
+    margin-left: auto;
+    color: var(--color-text-dim);
+    font-size: 13px;
+}
+
+.profile-connections > p {
+    margin: 12px 0 4px;
+    color: var(--color-text-dim);
 }
 
 /* =========================

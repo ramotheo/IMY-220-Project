@@ -11,11 +11,13 @@ import {
     MoreIcon,
 } from "./icon";
 import { useSocial } from "../context/useSocial";
+import { useFollowing } from "../context/useFollowing";
 
 function PostCard({ post }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const {
         profile,
+        users,
         isLiked,
         isBookmarked,
         isReshared,
@@ -25,12 +27,14 @@ function PostCard({ post }) {
         togglePostVisibility,
         deletePost,
     } = useSocial();
+    const { isFollowing, toggleFollow } = useFollowing();
 
     const liked = isLiked(post.id);
     const commented = post.comments.length > 0;
     const bookmarked = isBookmarked(post.id);
     const reshared = isReshared(post.id);
     const isOwner = post.username === profile.username;
+    const following = isFollowing(post.username);
 
     function getLikeCount() {
         const count = post.likes.length;
@@ -39,11 +43,26 @@ function PostCard({ post }) {
         return String(count);
     }
 
+    function getReshareCount() {
+        return users.filter((user) => (user.resharedPostIds || []).includes(post.id)).length;
+    }
+
     return (
         <article className="post-card">
             <PostHeader
                 username={post.username}
             />
+
+            {!isOwner && (
+                <button
+                    type="button"
+                    className="follow-button post-follow-button"
+                    aria-pressed={following}
+                    onClick={() => toggleFollow(post.username)}
+                >
+                    {following ? "Following" : "Follow"}
+                </button>
+            )}
 
             {isOwner && (
                 <div className="post-card-menu">
@@ -133,6 +152,7 @@ function PostCard({ post }) {
                     onClick={() => toggleReshare(post.id)}
                 >
                     <ReshareIcon />
+                    <span>{getReshareCount()}</span>
                 </button>
 
                 <button
