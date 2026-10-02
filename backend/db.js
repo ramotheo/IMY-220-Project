@@ -21,7 +21,6 @@ export async function connectToDatabase() {
     try {
         // Safe logging without brittle string splitting
         const maskedUri = uri.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@");
-        console.log("Connecting to MongoDB with URI:", maskedUri);
 
         client = new MongoClient(uri);
 

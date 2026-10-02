@@ -2,7 +2,6 @@
 
 import express from "express";
 import cors from "cors";
-import bcrypt from "bcrypt";
 import { ObjectId } from "mongodb";
 
 import upload from "./multer.js";
@@ -471,9 +470,7 @@ app.post("/api/auth/login", async (req, res) => {
             });
         }
 
-        // Verify password hash
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
+        if (password !== user.password) {
             return res.status(401).json({
                 success: false,
                 message: "Invalid credentials.",
@@ -520,10 +517,6 @@ app.post("/api/auth/signup", async (req, res) => {
             });
         }
 
-        // Encrypt the password before storing it in the database
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-
         // Create new user
         const userId = new ObjectId();
         const username = `user_${userId.toString().slice(-8)}`;
@@ -531,7 +524,7 @@ app.post("/api/auth/signup", async (req, res) => {
             _id: userId,
             username,
             email,
-            password: hashedPassword,
+            password,
             name: username,
             profilePicture: null,
             bio: "",

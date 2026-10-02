@@ -2,7 +2,6 @@
 
 import fs from "fs";
 import path from "path";
-import bcrypt from "bcrypt";
 import { fileURLToPath } from "url";
 
 import { connectToDatabase, getDatabase } from "./db.js";
@@ -81,16 +80,10 @@ async function seedDatabase() {
     fs.mkdirSync(uploadDirectory);
   }
 
-  // Hash passwords
-  const hashedUsers = [];
-
-  for (const user of users) {
-    const hashedPassword = await bcrypt.hash(user.password, 10);
-
-    hashedUsers.push({
+  const databaseUsers = users.map((user) => ({
       username: user.username,
       email: user.email,
-      password: hashedPassword,
+      password: user.password,
       name: user.name || user.username,
       profilePicture: user.profilePicture || null,
       bio: user.bio || "",
@@ -99,12 +92,11 @@ async function seedDatabase() {
       bookmarkedPostIds: [],
       resharedPostIds: [],
       createdAt: new Date(),
-    });
-  }
+  }));
 
-  const insertedUsers = await usersCollection.insertMany(hashedUsers);
+  const insertedUsers = await usersCollection.insertMany(databaseUsers);
   const userIdsByUsername = new Map(
-    hashedUsers.map((user, index) => [
+    databaseUsers.map((user, index) => [
       user.username,
       insertedUsers.insertedIds[index],
     ])
