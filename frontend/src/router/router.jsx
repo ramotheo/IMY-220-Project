@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import Splash from "../pages/splash/landing";
 import Login from "../pages/splash/login";
@@ -16,25 +16,43 @@ import AlbumPage from "../pages/album";
 import { FollowingProvider } from "../context/followingContext";
 import { SocialProvider } from "../context/socialContext";
 
+function getStoredUser() {
+    try {
+        return JSON.parse(localStorage.getItem("astrea-user") || "null");
+    } catch {
+        return null;
+    }
+}
+
+function RequireAuth({ children }) {
+    const user = getStoredUser();
+    return user?._id ? children : <Navigate to="/" replace />;
+}
+
+function GuestOnly({ children }) {
+    const user = getStoredUser();
+    return !user?._id ? children : <Navigate to="/home" replace />;
+}
+
 export default function Router() {
     return (
         <BrowserRouter>
             <SocialProvider>
                 <FollowingProvider>
                     <Routes>
-                        <Route path="/" element={<Splash />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/signup" element={<Signup />}/>
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/profile/:username" element={<Profile />} />
-                        <Route path="/profile/edit" element={<EditProfile />} />
-                        <Route path="/create" element={<CreatePost />} />
-                        <Route path="/albums/new" element={<AlbumPage createMode />} />
-                        <Route path="/album/:albumId" element={<AlbumPage />} />
-                        <Route path="/home" element={<Home />} />
-                        <Route path="/following" element={<Following />} />
-                        <Route path="/explore" element={<Explore />} />
-                        <Route path="/post/:postId" element={<Post />}/>
+                        <Route path="/" element={<GuestOnly><Splash /></GuestOnly>} />
+                        <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
+                        <Route path="/signup" element={<GuestOnly><Signup /></GuestOnly>} />
+                        <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+                        <Route path="/profile/:username" element={<RequireAuth><Profile /></RequireAuth>} />
+                        <Route path="/profile/edit" element={<RequireAuth><EditProfile /></RequireAuth>} />
+                        <Route path="/create" element={<RequireAuth><CreatePost /></RequireAuth>} />
+                        <Route path="/albums/new" element={<RequireAuth><AlbumPage createMode /></RequireAuth>} />
+                        <Route path="/album/:albumId" element={<RequireAuth><AlbumPage /></RequireAuth>} />
+                        <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
+                        <Route path="/following" element={<RequireAuth><Following /></RequireAuth>} />
+                        <Route path="/explore" element={<RequireAuth><Explore /></RequireAuth>} />
+                        <Route path="/post/:postId" element={<RequireAuth><Post /></RequireAuth>} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>
                 </FollowingProvider>

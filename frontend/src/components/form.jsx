@@ -154,9 +154,12 @@ function Form({ mode = "login", navigateTo, onModeChange }) {
 
         {/* EMAIL */}
         <Input
+          id="auth-email"
+          name="email"
           label="Email"
           type="email"
           placeholder="Enter your email"
+          autoComplete="email"
           value={formData.email}
           onChange={(value) => {
             setFormData({
@@ -171,9 +174,12 @@ function Form({ mode = "login", navigateTo, onModeChange }) {
         {/* PASSWORD */}
         <div className="password-input-wrapper">
           <Input
+            id="auth-password"
+            name="password"
             label="Password"
             type="password"
             togglePassword
+            autoComplete={isLogin ? "current-password" : "new-password"}
             placeholder="Enter your password"
             value={formData.password}
             onChange={(value) => {
@@ -191,9 +197,12 @@ function Form({ mode = "login", navigateTo, onModeChange }) {
         {!isLogin && (
           <div className="password-input-wrapper">
             <Input
+              id="auth-confirm-password"
+              name="confirmPassword"
               label="Confirm Password"
               type="password"
               togglePassword
+              autoComplete="new-password"
               placeholder="Confirm your password"
               value={formData.confirmPassword}
               onChange={(value) => {
