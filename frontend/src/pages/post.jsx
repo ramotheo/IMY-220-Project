@@ -215,6 +215,11 @@ function Post() {
                         <strong>{post.username}</strong>
                     </Link>{" "}
                     {post.caption}
+                    {post.hashtags?.length > 0 && (
+                        <p className="post-hashtags">
+                            {post.hashtags.map((tag) => <span key={tag}>#{tag}</span>)}
+                        </p>
+                    )}
                 </div>
             </section>
 

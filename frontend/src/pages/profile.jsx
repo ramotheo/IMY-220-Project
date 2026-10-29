@@ -19,6 +19,7 @@ function Profile() {
         profile,
         users,
         posts,
+        albums,
         loading,
     } = useSocial();
     const viewedUsername = username || profile.username;
@@ -40,6 +41,7 @@ function Profile() {
 
     const tabs = [
         { id: "grid", label: "Grid" },
+        { id: "albums", label: "Albums" },
         { id: "reshared", label: "Reshared" },
         { id: "liked", label: "Liked" },
         { id: "bookmarked", label: "Saved" },
@@ -166,8 +168,10 @@ function Profile() {
                                                     username={user.username}
                                                     className="connections-avatar"
                                                 />
-                                                <span>{user.name || user.username}</span>
-                                                <span>@{user.username}</span>
+                                                <span className="profile-connection-info">
+                                                    <strong>{user.name || user.username}</strong>
+                                                    <span>@{user.username}</span>
+                                                </span>
                                             </Link>
                                         </li>
                                     ))}
@@ -228,16 +232,56 @@ function Profile() {
 
                 {/* Post Grid */}
                 <section className="profile-post-grid">
-                    {visiblePosts.map((post) => (
-                        <PostCard
-                            key={post.id}
-                            post={post}
-                        />
-                    ))}
-                    {visiblePosts.length === 0 && (
-                        <p className="profile-empty-state">
-                            {activeTab === "grid" ? "No posts yet." : "Nothing here yet."}
-                        </p>
+                    {activeTab === "albums" ? (
+                        <>
+                            {isOwnProfile && (
+                                <Link to="/albums/new" className="album-create-card">
+                                    <span aria-hidden="true">+</span>
+                                    <strong>Create album</strong>
+                                </Link>
+                            )}
+                            {albums
+                                .filter((album) => album.ownerId === viewedProfile._id)
+                                .map((album) => {
+                                    const coverPost = posts.find((post) =>
+                                        album.postIds.includes(post.id) && !post.hidden && !post.locked
+                                    );
+                                    return (
+                                        <Link
+                                            key={album.id}
+                                            to={`/album/${album.id}`}
+                                            className="profile-album-card"
+                                        >
+                                            {coverPost ? (
+                                                <img src={coverPost.image} alt="" />
+                                            ) : (
+                                                <span className="profile-album-placeholder" aria-hidden="true">✦</span>
+                                            )}
+                                            <span className="profile-album-details">
+                                                <strong>{album.name}</strong>
+                                                <span>{album.postIds.length} {album.postIds.length === 1 ? "post" : "posts"}</span>
+                                            </span>
+                                        </Link>
+                                    );
+                                })}
+                            {isOwnProfile && albums.filter((album) => album.ownerId === viewedProfile._id).length === 0 && (
+                                <p className="profile-empty-state">Create an album to start collecting your posts.</p>
+                            )}
+                            {albums.filter((album) => album.ownerId === viewedProfile._id).length === 0 && !isOwnProfile && (
+                                <p className="profile-empty-state">No albums yet.</p>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            {visiblePosts.map((post) => (
+                                <PostCard key={post.id} post={post} />
+                            ))}
+                            {visiblePosts.length === 0 && (
+                                <p className="profile-empty-state">
+                                    {activeTab === "grid" ? "No posts yet." : "Nothing here yet."}
+                                </p>
+                            )}
+                        </>
                     )}
                 </section>
 

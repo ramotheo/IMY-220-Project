@@ -1,0 +1,389 @@
+
+.landing-page {
+    position: fixed;
+    z-index: 0;
+    inset: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    isolation: isolate;
+    color: var(--color-text);
+    background: var(--color-page-deep);
+    overscroll-behavior: none;
+}
+
+/* Landing background */
+
+.landing-splash {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.landing-starfield {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+    background:
+        radial-gradient(
+            ellipse at 50% 50%,
+            rgba(52, 35, 91, 0.18),
+            transparent 52%
+        ),
+        var(--color-page-deep);
+}
+
+.landing-star {
+    position: absolute;
+    top: var(--star-y);
+    left: var(--star-x);
+    width: var(--star-size);
+    height: var(--star-size);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px 1px rgba(197, 174, 255, 0.72);
+    animation:
+        landing-star-twinkle 3.8s ease-in-out
+        var(--star-delay) infinite;
+}
+
+/* Organic liquid-like background shape */
+
+.landing-orbit {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 50%;
+    width: min(100vw, 1200px);
+    height: min(100vh, 900px);
+    transform: translate(-40%, -60%) rotate(-28deg) scale(2.3);
+    pointer-events: none;
+    overflow: visible;
+}
+
+.landing-orbit-art {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.landing-orbit-glow {
+    opacity: 0.45;
+    filter: blur(120px) contrast(1.2);
+}
+
+.landing-orbit-silhouette {
+    filter: drop-shadow(
+        0 0 24px rgba(111, 81, 174, 0.12)
+    );
+}
+
+/* Introductory text */
+
+.landing-intro {
+    position: relative;
+    z-index: 1;
+    width: min(620px, 82vw);
+    margin: 0;
+    text-align: center;
+}
+
+.landing-eyebrow {
+    display: inline-block;
+    margin: 0 0 24px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid currentColor;
+    color: #e6c6d9;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.8px;
+    white-space: nowrap;
+}
+
+.landing-intro h1 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: clamp(38px, 5.2vw, 68px);
+    font-weight: 400;
+    letter-spacing: -2.5px;
+    line-height: 1.12;
+    text-wrap: balance;
+    text-shadow: 0 3px 24px rgba(5, 8, 28, 0.62);
+}
+
+.landing-intro h1 span {
+    display: block;
+    color: #d7c5ff;
+}
+
+/* Refined description typography */
+
+.landing-description {
+    max-width: 490px;
+    margin: 28px auto 0;
+    text-align: center;
+}
+
+.landing-description-lead {
+    max-width: 420px;
+    margin: 0 auto;
+    color: #f0e7ff;
+    font-family: var(--font-heading);
+    font-size: clamp(19px, 2vw, 24px);
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: -0.35px;
+    text-wrap: balance;
+}
+
+.landing-description-detail {
+    max-width: 460px;
+    margin: 16px auto 0;
+    color: rgba(232, 229, 246, 0.76);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.85;
+    letter-spacing: 0.1px;
+    text-wrap: pretty;
+}
+
+/* Scroll prompt */
+
+.landing-scroll-prompt {
+    position: absolute;
+    z-index: 1;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    transform: translateX(-50%);
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: color var(--motion-standard);
+}
+
+.landing-scroll-prompt:hover {
+    color: #e6c6d9;
+}
+
+.landing-scroll-prompt:focus-visible {
+    outline: 2px solid #d7c5ff;
+    outline-offset: 5px;
+    border-radius: 4px;
+}
+
+.landing-scroll-indicator {
+    position: relative;
+    display: block;
+    width: 1px;
+    height: 34px;
+    background: rgba(255, 255, 255, 0.72);
+    animation: landing-scroll-pulse 1.8s ease-in-out infinite;
+}
+
+.landing-scroll-indicator::after {
+    position: absolute;
+    bottom: 0;
+    left: -3px;
+    width: 7px;
+    height: 7px;
+    transform: rotate(45deg);
+    border-right: 1px solid currentColor;
+    border-bottom: 1px solid currentColor;
+    content: "";
+}
+
+/* Authentication overlay */
+
+.landing-auth-cover {
+    position: fixed;
+    z-index: 2;
+    inset: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    transform: translateY(100%);
+    visibility: hidden;
+    pointer-events: none;
+    background: var(--color-page-deep);
+    transition:
+        transform 680ms cubic-bezier(0.22, 0.75, 0.22, 1),
+        visibility 0s linear 680ms;
+    overscroll-behavior: contain;
+}
+
+.landing-auth-cover.is-visible {
+    transform: translateY(0);
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+        transform 680ms cubic-bezier(0.22, 0.75, 0.22, 1),
+        visibility 0s;
+}
+
+.landing-back-button {
+    position: absolute;
+    z-index: 3;
+    top: max(18px, env(safe-area-inset-top));
+    left: 20px;
+    padding: 9px 13px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: var(--radius-control);
+    background: rgba(8, 13, 39, 0.72);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition:
+        background var(--motion-standard),
+        border-color var(--motion-standard);
+}
+
+.landing-back-button:hover {
+    border-color: var(--color-white);
+    background: rgba(8, 13, 39, 0.94);
+}
+
+/* Animations */
+
+@keyframes landing-scroll-pulse {
+    0%,
+    100% {
+        opacity: 0.45;
+        transform: scaleY(0.8);
+        transform-origin: top;
+    }
+
+    50% {
+        opacity: 1;
+        transform: scaleY(1);
+        transform-origin: top;
+    }
+}
+
+@keyframes landing-star-twinkle {
+    0%,
+    100% {
+        opacity: 0.35;
+        transform: scale(0.75);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.25);
+    }
+}
+
+/* Responsive layout */
+
+@media (max-width: 700px) {
+    .landing-orbit {
+        width: 115vw;
+        height: 72vh;
+        height: 72dvh;
+    }
+
+    .landing-intro {
+        width: min(520px, 84vw);
+    }
+
+    .landing-eyebrow {
+        margin-bottom: 20px;
+        font-size: 9px;
+        letter-spacing: 2px;
+    }
+
+    .landing-intro h1 {
+        font-size: clamp(36px, 9vw, 50px);
+        letter-spacing: -1.5px;
+    }
+
+    .landing-description {
+        max-width: 420px;
+        margin-top: 22px;
+    }
+
+    .landing-description-lead {
+        font-size: 19px;
+        line-height: 1.45;
+    }
+
+    .landing-description-detail {
+        margin-top: 12px;
+        font-size: 13px;
+        line-height: 1.75;
+    }
+
+    .landing-scroll-prompt {
+        bottom: max(16px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Short screens */
+
+@media (max-height: 650px) {
+    .landing-orbit {
+        height: 100vh;
+        height: 100dvh;
+    }
+
+    .landing-eyebrow {
+        margin-bottom: 14px;
+    }
+
+    .landing-intro h1 {
+        font-size: clamp(34px, 4.5vw, 54px);
+    }
+
+    .landing-description {
+        margin-top: 16px;
+    }
+
+    .landing-description-lead {
+        font-size: 18px;
+    }
+
+    .landing-description-detail {
+        margin-top: 8px;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .landing-scroll-prompt {
+        bottom: max(8px, env(safe-area-inset-bottom));
+        gap: 6px;
+        padding: 8px 14px;
+    }
+
+    .landing-scroll-indicator {
+        height: 22px;
+    }
+}
+
+/* Accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+    .landing-scroll-indicator,
+    .landing-star {
+        animation: none;
+    }
+
+    .landing-auth-cover,
+    .landing-auth-cover.is-visible {
+        transition: transform 1ms, visibility 0s;
+    }
+}

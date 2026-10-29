@@ -10,12 +10,7 @@ import { useSocial } from "../context/useSocial";
 import "../styles/Splash.css";
 
 function validateFormData(formData, isLogin) {
-  const { username, email, password, confirmPassword } = formData;
-
-  // Username is needed to log in, but is created after signup.
-  if (isLogin && !username.trim()) {
-    return "Username is required.";
-  }
+  const { email, password, confirmPassword } = formData;
 
   // Email
   if (!email.trim()) {
@@ -54,7 +49,7 @@ function validateFormData(formData, isLogin) {
   return null;
 }
 
-function Form({ mode = "login", navigateTo }) {
+function Form({ mode = "login", navigateTo, onModeChange }) {
   const navigate = useNavigate();
   const { setCurrentUser } = useSocial();
 
@@ -62,13 +57,19 @@ function Form({ mode = "login", navigateTo }) {
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
-    username: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
 
   const isLogin = mode === "login";
+
+  function handleModeLink(event, nextMode) {
+    if (onModeChange) {
+      event.preventDefault();
+      onModeChange(nextMode);
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -85,9 +86,7 @@ function Form({ mode = "login", navigateTo }) {
     setLoading(true);
 
     try {
-      const requestData = isLogin
-        ? formData
-        : { email: formData.email, password: formData.password };
+      const requestData = { email: formData.email.trim(), password: formData.password };
       const data = await apiRequest(`/api/auth/${isLogin ? "login" : "signup"}`, {
         method: "POST",
         body: JSON.stringify(requestData),
@@ -113,11 +112,19 @@ function Form({ mode = "login", navigateTo }) {
       <form className="login-right" onSubmit={handleSubmit}>
         {/* AUTH TOGGLE */}
         <div className="auth-toggle">
-          <Link to="/login" className={isLogin ? "active" : ""}>
+          <Link
+            to="/login"
+            className={isLogin ? "active" : ""}
+            onClick={(event) => handleModeLink(event, "login")}
+          >
             Login
           </Link>
 
-          <Link to="/signup" className={!isLogin ? "active" : ""}>
+          <Link
+            to="/signup"
+            className={!isLogin ? "active" : ""}
+            onClick={(event) => handleModeLink(event, "signup")}
+          >
             Signup
           </Link>
         </div>
@@ -144,18 +151,6 @@ function Form({ mode = "login", navigateTo }) {
                         )}
                     </span> */}
         </div>
-
-        {isLogin && (
-          <Input
-            label="Username"
-            placeholder="Enter your username"
-            value={formData.username}
-            onChange={(value) => {
-              setFormData({ ...formData, username: value });
-              setError("");
-            }}
-          />
-        )}
 
         {/* EMAIL */}
         <Input
@@ -231,11 +226,11 @@ function Form({ mode = "login", navigateTo }) {
         <div className="form-actions">
           {isLogin ? (
             <p>
-              Don't have an account? <Link to="/signup">Sign Up</Link>
+              Don't have an account? <Link to="/signup" onClick={(event) => handleModeLink(event, "signup")}>Sign Up</Link>
             </p>
           ) : (
             <p>
-              Already have an account? <Link to="/login">Login</Link>
+              Already have an account? <Link to="/login" onClick={(event) => handleModeLink(event, "login")}>Login</Link>
             </p>
           )}
         </div>

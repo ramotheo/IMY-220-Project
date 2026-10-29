@@ -32,6 +32,7 @@ export function SocialProvider({ children }) {
     const [profile, setProfile] = useState(loadCurrentUser);
     const [users, setUsers] = useState([]);
     const [posts, setPosts] = useState([]);
+    const [albums, setAlbums] = useState([]);
     const [likedPostIds, setLikedPostIds] = useState([]);
     const [bookmarkedPostIds, setBookmarkedPostIds] = useState(() =>
         loadCurrentUser().bookmarkedPostIds || []
@@ -47,6 +48,7 @@ export function SocialProvider({ children }) {
         return {
             ...post,
             id: post.id || post._id,
+            hashtags: post.hashtags || [],
             image: getImageUrl(post.image),
             comments: (post.comments || []).map((comment) => ({
                 ...comment,
@@ -67,12 +69,14 @@ export function SocialProvider({ children }) {
         setLoading(true);
         setError("");
         try {
-            const [fetchedPosts, fetchedUsers] = await Promise.all([
+            const [fetchedPosts, fetchedUsers, fetchedAlbums] = await Promise.all([
                 apiRequest("/api/posts"),
                 apiRequest("/api/users"),
+                apiRequest("/api/albums"),
             ]);
             const normalizedPosts = fetchedPosts.map(normalizePost);
             setPosts(normalizedPosts);
+            setAlbums(fetchedAlbums);
             const normalizedUsers = fetchedUsers.map(normalizeUser);
             setUsers(normalizedUsers);
 
@@ -107,10 +111,12 @@ export function SocialProvider({ children }) {
         Promise.all([
             apiRequest("/api/posts"),
             apiRequest("/api/users"),
-        ]).then(([fetchedPosts, fetchedUsers]) => {
+            apiRequest("/api/albums"),
+        ]).then(([fetchedPosts, fetchedUsers, fetchedAlbums]) => {
             if (cancelled) return;
             const normalizedPosts = fetchedPosts.map(normalizePost);
             setPosts(normalizedPosts);
+            setAlbums(fetchedAlbums);
             const normalizedUsers = fetchedUsers.map(normalizeUser);
             setUsers(normalizedUsers);
             setProfile((current) => {
@@ -156,11 +162,12 @@ export function SocialProvider({ children }) {
         setResharedPostIds(currentUser.resharedPostIds || []);
     }
 
-    async function createPost({ imageFile, caption }) {
+    async function createPost({ imageFile, caption, hashtags = [] }) {
         const formData = new FormData();
         formData.append("image", imageFile);
         formData.append("userId", profile._id);
         formData.append("caption", caption);
+        formData.append("hashtags", hashtags.join(","));
         const post = await apiRequest("/api/upload", {
             method: "POST",
             body: formData,
@@ -168,6 +175,32 @@ export function SocialProvider({ children }) {
         const normalizedPost = normalizePost(post);
         setPosts((current) => [normalizedPost, ...current]);
         return normalizedPost;
+    }
+
+    async function createAlbum(albumData) {
+        const album = await apiRequest("/api/albums", {
+            method: "POST",
+            body: JSON.stringify({ ...albumData, userId: profile._id }),
+        });
+        setAlbums((current) => [album, ...current]);
+        return album;
+    }
+
+    async function updateAlbum(albumId, albumData) {
+        const album = await apiRequest(`/api/albums/${albumId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ ...albumData, userId: profile._id }),
+        });
+        setAlbums((current) => current.map((item) => item.id === album.id ? album : item));
+        return album;
+    }
+
+    async function deleteAlbum(albumId) {
+        await apiRequest(`/api/albums/${albumId}`, {
+            method: "DELETE",
+            body: JSON.stringify({ userId: profile._id }),
+        });
+        setAlbums((current) => current.filter((album) => album.id !== albumId));
     }
 
     async function updateProfile(updatedProfile) {
@@ -216,6 +249,10 @@ export function SocialProvider({ children }) {
             body: JSON.stringify({ userId: profile._id }),
         });
         setPosts((current) => current.filter((post) => post.id !== postId));
+        setAlbums((current) => current.map((album) => ({
+            ...album,
+            postIds: album.postIds.filter((id) => id !== postId),
+        })));
         setLikedPostIds((current) => current.filter((id) => id !== postId));
         setBookmarkedPostIds((current) => current.filter((id) => id !== postId));
         setResharedPostIds((current) => current.filter((id) => id !== postId));
@@ -289,6 +326,15 @@ export function SocialProvider({ children }) {
         setProfile(EMPTY_PROFILE);
         setUsers((current) => current.filter((user) => user._id !== profile._id));
         setPosts((current) => current.filter((post) => post.authorId !== profile._id));
+        setAlbums((current) => current
+            .filter((album) => album.ownerId !== profile._id)
+            .map((album) => ({
+                ...album,
+                postIds: album.postIds.filter((id) =>
+                    !posts.some((post) => post.id === id && post.authorId === profile._id)
+                ),
+            }))
+        );
         setLikedPostIds([]);
         setBookmarkedPostIds([]);
         setResharedPostIds([]);
@@ -306,6 +352,7 @@ export function SocialProvider({ children }) {
         profile,
         users,
         posts,
+        albums,
         likedPostIds,
         bookmarkedPostIds,
         resharedPostIds,
@@ -321,6 +368,9 @@ export function SocialProvider({ children }) {
         toggleReshare: (postId) => togglePostState("resharedPostIds", postId),
         addComment,
         createPost,
+        createAlbum,
+        updateAlbum,
+        deleteAlbum,
         updateProfile,
         uploadProfilePicture,
         deletePost,
@@ -335,4 +385,3 @@ export function SocialProvider({ children }) {
         </SocialContext.Provider>
     );
 }
-

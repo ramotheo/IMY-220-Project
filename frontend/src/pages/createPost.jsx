@@ -12,6 +12,7 @@ function CreatePost() {
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState("");
     const [caption, setCaption] = useState("");
+    const [hashtags, setHashtags] = useState("");
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -31,7 +32,11 @@ function CreatePost() {
 
         setIsSubmitting(true);
         try {
-            await createPost({ imageFile, caption: cleanCaption });
+            await createPost({
+                imageFile,
+                caption: cleanCaption,
+                hashtags: hashtags.split(/[,\s]+/).map((tag) => tag.trim().replace(/^#+/, "")).filter(Boolean),
+            });
             navigate("/profile");
         } catch (requestError) {
             setError(requestError.message);
@@ -69,6 +74,20 @@ function CreatePost() {
                             }}
                             required
                         />
+                    </label>
+
+                    <label>
+                        Hashtags
+                        <input
+                            type="text"
+                            value={hashtags}
+                            onChange={(event) => setHashtags(event.target.value)}
+                            placeholder="travel, friends, sunset"
+                            aria-describedby="post-hashtag-hint"
+                        />
+                        <span id="post-hashtag-hint" className="field-counter">
+                            Separate hashtags with commas.
+                        </span>
                     </label>
 
                     {imagePreview && (

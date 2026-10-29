@@ -28,7 +28,7 @@ function SiteHeader() {
     function handleLogout() {
         logout();
         setConfirmLogout(false);
-        navigate("/login", { replace: true });
+        navigate("/", { replace: true });
     }
 
     return (

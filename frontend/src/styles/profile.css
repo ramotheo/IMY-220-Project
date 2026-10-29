@@ -100,79 +100,105 @@
 }
 
 .profile-connections {
-    width: min(100%, 440px);
-    max-height: 320px;
-    margin: 24px 0 0 auto;
-    padding: 16px;
-    overflow-y: auto;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--radius-small);
-    background: var(--color-surface-profile);
+    width: 100%;
+    margin-top: 24px;
+    border-top: 1px solid var(--color-border-subtle);
 }
 
 .profile-connections > header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
+    padding: 14px 0 10px;
 }
 
 .profile-connections h2 {
     margin: 0;
     color: var(--color-text);
-    font-size: 16px;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 .profile-connections > header button {
-    padding: 5px 9px;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--radius-small);
+    padding: 4px 0 4px 10px;
+    border: 0;
     background: transparent;
     color: var(--color-text-profile);
     font: inherit;
+    font-size: 12px;
     cursor: pointer;
+}
+
+.profile-connections > header button:hover {
+    text-decoration: underline;
 }
 
 .profile-connections ul {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
+    max-height: 240px;
     margin: 0;
     padding: 0;
+    overflow-y: auto;
     list-style: none;
 }
 
 .profile-connections li a {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px;
-    border-radius: var(--radius-small);
-    color: var(--color-text-profile);
+    gap: 12px;
+    min-height: 54px;
+    padding: 8px 10px;
+    border-radius: var(--radius-card);
+    background: var(--color-search-surface);
+    color: var(--color-ink-strong);
     text-decoration: none;
+    transition: opacity var(--motion-standard);
 }
 
 .profile-connections li a:hover {
-    background: var(--color-surface-profile-raised);
+    opacity: 0.78;
 }
 
 .connections-avatar {
-    width: 36px;
-    height: 36px;
-    flex: 0 0 36px;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
     border-radius: var(--radius-pill);
     object-fit: cover;
 }
 
-.profile-connections li a span:last-child {
-    margin-left: auto;
-    color: var(--color-text-dim);
+.profile-connection-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.profile-connection-info strong {
+    overflow: hidden;
     font-size: 13px;
+    font-weight: 700;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-connection-info span {
+    overflow: hidden;
+    color: var(--color-search-detail);
+    font-size: 11px;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .profile-connections > p {
-    margin: 12px 0 4px;
+    margin: 0;
+    padding: 12px 0 16px;
     color: var(--color-text-dim);
+    font-size: 13px;
 }
 
 /* =========================
@@ -324,6 +350,82 @@
     grid-column: 1 / -1;
     color: var(--color-text-muted);
     text-align: center;
+}
+
+.profile-album-card,
+.album-create-card {
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-card);
+    background: var(--color-surface-profile);
+    color: var(--color-text-profile);
+    text-decoration: none;
+}
+
+.profile-album-card img,
+.profile-album-placeholder {
+    display: grid;
+    width: 100%;
+    aspect-ratio: 1;
+    place-items: center;
+    background: var(--color-surface-profile-raised);
+    color: var(--color-accent-soft);
+    font-size: 46px;
+    object-fit: cover;
+}
+
+.profile-album-card:hover img {
+    filter: brightness(0.82);
+}
+
+.profile-album-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 11px;
+}
+
+.profile-album-details strong {
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-album-details span {
+    color: var(--color-text-dim);
+    font-size: 11px;
+}
+
+.album-create-card {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    aspect-ratio: 1;
+    border-style: dashed;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.album-create-card:hover {
+    border-color: var(--color-accent-soft);
+    color: var(--color-text);
+}
+
+.album-create-card > span {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    font-size: 28px;
+    font-weight: 300;
 }
 
 /* =========================

@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+import Splash from "../pages/splash/landing";
 import Login from "../pages/splash/login";
 import Signup from "../pages/splash/signup";
 import Profile from "../pages/profile";
@@ -10,6 +11,7 @@ import Post from "../pages/post";
 import NotFound from "../pages/notFound";
 import EditProfile from "../pages/editProfile";
 import CreatePost from "../pages/createPost";
+import AlbumPage from "../pages/album";
 
 import { FollowingProvider } from "../context/followingContext";
 import { SocialProvider } from "../context/socialContext";
@@ -20,13 +22,15 @@ export default function Router() {
             <SocialProvider>
                 <FollowingProvider>
                     <Routes>
-                        <Route path="/" element={<Login />} />
+                        <Route path="/" element={<Splash />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />}/>
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/profile/:username" element={<Profile />} />
                         <Route path="/profile/edit" element={<EditProfile />} />
                         <Route path="/create" element={<CreatePost />} />
+                        <Route path="/albums/new" element={<AlbumPage createMode />} />
+                        <Route path="/album/:albumId" element={<AlbumPage />} />
                         <Route path="/home" element={<Home />} />
                         <Route path="/following" element={<Following />} />
                         <Route path="/explore" element={<Explore />} />

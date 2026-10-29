@@ -64,6 +64,7 @@ function serializePost(post, usersById) {
         authorId: post.authorId?.toString(),
         username: author?.username || "Unknown",
         caption: post.caption || "",
+        hashtags: post.hashtags || [],
         image: /^https?:\/\//i.test(post.image)
             ? post.image
             : `/uploads/${encodeURIComponent(post.image)}`,
@@ -73,6 +74,30 @@ function serializePost(post, usersById) {
         hidden: post.hidden || false,
         locked: post.locked || false,
         views: post.views || 0,
+    };
+}
+
+function normalizeHashtags(hashtags) {
+    if (!Array.isArray(hashtags)) return [];
+    return [...new Set(hashtags
+        .filter((hashtag) => typeof hashtag === "string")
+        .map((hashtag) => hashtag.trim().replace(/^#+/, "").toLowerCase())
+        .filter((hashtag) => /^[a-z0-9_]+$/.test(hashtag))
+    )].slice(0, 30);
+}
+
+function serializeAlbum(album, usersById) {
+    const owner = usersById.get(album.ownerId.toString());
+    return {
+        id: album._id.toString(),
+        ownerId: album.ownerId.toString(),
+        ownerUsername: owner?.username || "Unknown",
+        name: album.name,
+        description: album.description || "",
+        hashtags: album.hashtags || [],
+        postIds: (album.postIds || []).map((id) => id.toString()),
+        createdAt: album.createdAt,
+        updatedAt: album.updatedAt,
     };
 }
 
@@ -118,9 +143,154 @@ app.get("/api/posts", async (req, res) => {
     }
 });
 
+app.get("/api/albums", async (req, res) => {
+    try {
+        const db = getDatabase();
+        const [albums, usersById] = await Promise.all([
+            db.collection("albums").find({}).sort({ updatedAt: -1 }).toArray(),
+            getUsersById(db),
+        ]);
+        res.json(albums.map((album) => serializeAlbum(album, usersById)));
+    } catch (error) {
+        console.error("Error loading albums:", error);
+        res.status(500).json({ message: "Unable to load albums." });
+    }
+});
+
+app.post("/api/albums", async (req, res) => {
+    try {
+        const { userId, name, description, hashtags, postIds = [] } = req.body;
+        if (!ObjectId.isValid(userId) || typeof name !== "string" || !name.trim()) {
+            return res.status(400).json({ message: "A valid user and album name are required." });
+        }
+        if (name.trim().length > 80 ||
+            (description !== undefined &&
+                (typeof description !== "string" || description.length > 500)) ||
+            !Array.isArray(postIds) || postIds.some((id) => !ObjectId.isValid(id))) {
+            return res.status(400).json({ message: "Album details are invalid." });
+        }
+
+        const db = getDatabase();
+        const owner = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+        if (!owner) return res.status(404).json({ message: "User not found." });
+
+        const selectedPostIds = [...new Set(postIds)].map((id) => new ObjectId(id));
+        if (selectedPostIds.length) {
+            const validPostCount = await db.collection("posts").countDocuments({
+                _id: { $in: selectedPostIds },
+                hidden: { $ne: true },
+                locked: { $ne: true },
+            });
+            if (validPostCount !== selectedPostIds.length) {
+                return res.status(400).json({ message: "Albums can only include available posts." });
+            }
+        }
+
+        const album = {
+            ownerId: owner._id,
+            name: name.trim(),
+            description: typeof description === "string" ? description.trim() : "",
+            hashtags: normalizeHashtags(hashtags),
+            postIds: selectedPostIds,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+        const result = await db.collection("albums").insertOne(album);
+        res.status(201).json(serializeAlbum(
+            { ...album, _id: result.insertedId },
+            new Map([[owner._id.toString(), owner]])
+        ));
+    } catch (error) {
+        console.error("Error creating album:", error);
+        res.status(500).json({ message: "Unable to create album." });
+    }
+});
+
+app.patch("/api/albums/:albumId", async (req, res) => {
+    try {
+        const { albumId } = req.params;
+        const { userId, name, description, hashtags, postIds } = req.body;
+        if (!ObjectId.isValid(albumId) || !ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: "Valid album and user IDs are required." });
+        }
+
+        const updates = {};
+        if (name !== undefined) {
+            if (typeof name !== "string" || !name.trim() || name.trim().length > 80) {
+                return res.status(400).json({ message: "Album name must be between 1 and 80 characters." });
+            }
+            updates.name = name.trim();
+        }
+        if (description !== undefined) {
+            if (typeof description !== "string" || description.length > 500) {
+                return res.status(400).json({ message: "Album description is invalid." });
+            }
+            updates.description = description.trim();
+        }
+        if (hashtags !== undefined) updates.hashtags = normalizeHashtags(hashtags);
+        if (postIds !== undefined) {
+            if (!Array.isArray(postIds) || postIds.some((id) => !ObjectId.isValid(id))) {
+                return res.status(400).json({ message: "Album posts are invalid." });
+            }
+            const selectedPostIds = [...new Set(postIds)].map((id) => new ObjectId(id));
+            if (selectedPostIds.length) {
+                const validPostCount = await getDatabase().collection("posts").countDocuments({
+                    _id: { $in: selectedPostIds },
+                    hidden: { $ne: true },
+                    locked: { $ne: true },
+                });
+                if (validPostCount !== selectedPostIds.length) {
+                    return res.status(400).json({ message: "Albums can only include available posts." });
+                }
+            }
+            updates.postIds = selectedPostIds;
+        }
+        if (!Object.keys(updates).length) {
+            return res.status(400).json({ message: "At least one album field must be updated." });
+        }
+
+        updates.updatedAt = new Date();
+        const db = getDatabase();
+        const result = await db.collection("albums").updateOne(
+            { _id: new ObjectId(albumId), ownerId: new ObjectId(userId) },
+            { $set: updates }
+        );
+        if (!result.matchedCount) return res.status(404).json({ message: "Album not found." });
+
+        const [album, usersById] = await Promise.all([
+            db.collection("albums").findOne({ _id: new ObjectId(albumId) }),
+            getUsersById(db),
+        ]);
+        res.json(serializeAlbum(album, usersById));
+    } catch (error) {
+        console.error("Error updating album:", error);
+        res.status(500).json({ message: "Unable to update album." });
+    }
+});
+
+app.delete("/api/albums/:albumId", async (req, res) => {
+    try {
+        const { albumId } = req.params;
+        const { userId } = req.body;
+        if (!ObjectId.isValid(albumId) || !ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: "Valid album and user IDs are required." });
+        }
+
+        const result = await getDatabase().collection("albums").deleteOne({
+            _id: new ObjectId(albumId),
+            ownerId: new ObjectId(userId),
+        });
+        if (!result.deletedCount) return res.status(404).json({ message: "Album not found." });
+        res.status(204).end();
+    } catch (error) {
+        console.error("Error deleting album:", error);
+        res.status(500).json({ message: "Unable to delete album." });
+    }
+});
+
 app.post("/api/posts", async (req, res) => {
     try {
-        const { userId, image, caption } = req.body;
+        const { userId, image, caption, hashtags } = req.body;
         if (!ObjectId.isValid(userId) || typeof image !== "string" || !image.trim()) {
             return res.status(400).json({ message: "A user and image are required." });
         }
@@ -137,6 +307,7 @@ app.post("/api/posts", async (req, res) => {
             authorId: author._id,
             image: image.trim(),
             caption: typeof caption === "string" ? caption.trim() : "",
+            hashtags: normalizeHashtags(hashtags),
             likes: [],
             comments: [],
             hidden: false,
@@ -395,7 +566,8 @@ app.delete("/api/posts/:postId", async (req, res) => {
             return res.status(400).json({ message: "Valid post and user IDs are required." });
         }
 
-        const result = await getDatabase().collection("posts").deleteOne({
+        const db = getDatabase();
+        const result = await db.collection("posts").deleteOne({
             _id: new ObjectId(postId),
             authorId: new ObjectId(userId),
         });
@@ -403,6 +575,10 @@ app.delete("/api/posts/:postId", async (req, res) => {
             return res.status(404).json({ message: "Post not found." });
         }
 
+        await db.collection("albums").updateMany(
+            { postIds: new ObjectId(postId) },
+            { $pull: { postIds: new ObjectId(postId) } }
+        );
         res.status(204).end();
     } catch (error) {
         console.error("Error deleting post:", error);
@@ -420,6 +596,10 @@ app.delete("/api/users/:userId", async (req, res) => {
         const db = getDatabase();
         const userObjectId = new ObjectId(userId);
         const usersCollection = db.collection("users");
+        const ownedPosts = await db.collection("posts")
+            .find({ authorId: userObjectId }, { projection: { _id: 1 } })
+            .toArray();
+        const ownedPostIds = ownedPosts.map((post) => post._id);
         const result = await usersCollection.deleteOne({ _id: userObjectId });
         if (!result.deletedCount) {
             return res.status(404).json({ message: "User not found." });
@@ -427,6 +607,11 @@ app.delete("/api/users/:userId", async (req, res) => {
 
         await Promise.all([
             db.collection("posts").deleteMany({ authorId: userObjectId }),
+            db.collection("albums").deleteMany({ ownerId: userObjectId }),
+            db.collection("albums").updateMany(
+                {},
+                { $pull: { postIds: { $in: ownedPostIds } } }
+            ),
             db.collection("posts").updateMany(
                 { "comments.authorId": userObjectId },
                 { $pull: { comments: { authorId: userObjectId } } }
@@ -447,38 +632,32 @@ app.delete("/api/users/:userId", async (req, res) => {
 ===================== AUTHENTICATION ENDPOINTS =====================
 */
 
-// Login endpoint (Fixed)
 app.post("/api/auth/login", async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { email, password } = req.body;
+        const normalizedEmail = typeof email === "string" ? email.trim() : "";
 
-        // Ensure required fields exist
-        const identifier = username || email;
-        if (!identifier || !password) {
+        if (!normalizedEmail || typeof password !== "string" || !password) {
             return res.status(400).json({
                 success: false,
-                message: "Username/email and password are required.",
+                message: "Email and password are required.",
             });
         }
 
         const db = getDatabase();
-
-        // Search for user by either username or email
-        const user = await db.collection("users").findOne({
-            $or: [{ username: identifier }, { email: identifier }],
-        });
+        const user = await db.collection("users").findOne({ email: normalizedEmail });
 
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: "Invalid credentials.",
+                message: "Email not found.",
             });
         }
 
         if (password !== user.password) {
             return res.status(401).json({
                 success: false,
-                message: "Invalid credentials.",
+                message: "Invalid password.",
             });
         }
 
@@ -503,8 +682,9 @@ app.post("/api/auth/login", async (req, res) => {
 app.post("/api/auth/signup", async (req, res) => {
     try {
         const { email, password } = req.body;
+        const normalizedEmail = typeof email === "string" ? email.trim() : "";
 
-        if (!email || !password) {
+        if (!normalizedEmail || typeof password !== "string" || !password) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required.",
@@ -513,7 +693,7 @@ app.post("/api/auth/signup", async (req, res) => {
 
         const db = getDatabase();
 
-        const existingUser = await db.collection("users").findOne({ email });
+        const existingUser = await db.collection("users").findOne({ email: normalizedEmail });
 
         if (existingUser) {
             return res.status(400).json({
@@ -528,7 +708,7 @@ app.post("/api/auth/signup", async (req, res) => {
         const newUser = {
             _id: userId,
             username,
-            email,
+            email: normalizedEmail,
             password,
             name: username,
             profilePicture: null,
@@ -547,7 +727,7 @@ app.post("/api/auth/signup", async (req, res) => {
             message: "Account created successfully",
             user: {
                 ...serializeUser({ ...newUser, _id: result.insertedId }),
-                email,
+                email: normalizedEmail,
             },
         });
     } catch (error) {
@@ -566,7 +746,7 @@ app.post("/api/auth/signup", async (req, res) => {
 // Image upload endpoint
 app.post("/api/upload", upload.single("image"), async (req, res) => {
     try {
-        const { userId, caption } = req.body;
+        const { userId, caption, hashtags } = req.body;
 
         if (!req.file) {
             return res.status(400).json({
@@ -590,6 +770,9 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
         const post = {
             authorId: author._id,
             caption: caption || "",
+            hashtags: normalizeHashtags(
+                typeof hashtags === "string" ? hashtags.split(",") : hashtags
+            ),
             image: req.file.filename,
             likes: [],
             comments: [],

@@ -420,6 +420,10 @@
     text-decoration: underline;
 }
 
+.single-post-caption .post-hashtags {
+    margin: 8px 0 0;
+}
+
 /* ====================== COMMENTS ====================== */
 
 .comments {
