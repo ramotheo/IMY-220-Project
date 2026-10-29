@@ -12,6 +12,7 @@ import NotFound from "../pages/notFound";
 import EditProfile from "../pages/editProfile";
 import CreatePost from "../pages/createPost";
 import AlbumPage from "../pages/album";
+import Admin from "../pages/admin";
 
 import { FollowingProvider } from "../context/followingContext";
 import { SocialProvider } from "../context/socialContext";
@@ -34,6 +35,11 @@ function GuestOnly({ children }) {
     return !user?._id ? children : <Navigate to="/home" replace />;
 }
 
+function RequireAdmin({ children }) {
+    const user = getStoredUser();
+    return user?._id && user.isAdmin ? children : <Navigate to="/home" replace />;
+}
+
 export default function Router() {
     return (
         <BrowserRouter>
@@ -53,6 +59,7 @@ export default function Router() {
                         <Route path="/following" element={<RequireAuth><Following /></RequireAuth>} />
                         <Route path="/explore" element={<RequireAuth><Explore /></RequireAuth>} />
                         <Route path="/post/:postId" element={<RequireAuth><Post /></RequireAuth>} />
+                        <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>
                 </FollowingProvider>

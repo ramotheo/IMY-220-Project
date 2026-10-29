@@ -243,6 +243,51 @@ export function SocialProvider({ children }) {
         return nextProfile;
     }
 
+    async function addReportReason(reason) {
+        const createdReason = await apiRequest("/api/admin/report-reasons", {
+            method: "POST",
+            body: JSON.stringify({ reason, userId: profile._id }),
+        });
+        return createdReason;
+    }
+
+    async function reportPost(postId, reason) {
+        const updatedPost = await apiRequest(`/api/posts/${postId}/report`, {
+            method: "POST",
+            body: JSON.stringify({ userId: profile._id, reason }),
+        });
+        const normalizedPost = normalizePost(updatedPost);
+        setPosts((current) => current.map((item) =>
+            item.id === postId ? normalizedPost : item
+        ));
+        return normalizedPost;
+    }
+
+    async function deleteUserAccountByAdmin(userId) {
+        await apiRequest(`/api/users/${userId}`, {
+            method: "DELETE",
+            body: JSON.stringify({ actingUserId: profile._id }),
+        });
+        setUsers((current) => current.filter((user) => user._id !== userId));
+        setPosts((current) => current.filter((post) => post.authorId !== userId));
+        setAlbums((current) => current.filter((album) => album.ownerId !== userId));
+    }
+
+    async function toggleUserVerification(userId, verified) {
+        const savedUser = await apiRequest(`/api/users/${userId}/verification`, {
+            method: "PATCH",
+            body: JSON.stringify({ actingUserId: profile._id, verified }),
+        });
+        const normalizedUser = normalizeUser(savedUser);
+        setUsers((current) => current.map((user) =>
+            user._id === userId ? normalizedUser : user
+        ));
+        setProfile((current) => current?._id === userId
+            ? { ...current, ...normalizedUser, email: current.email }
+            : current);
+        return normalizedUser;
+    }
+
     async function deletePost(postId) {
         await apiRequest(`/api/posts/${postId}`, {
             method: "DELETE",
@@ -376,6 +421,10 @@ export function SocialProvider({ children }) {
         deletePost,
         togglePostVisibility,
         deleteAccount,
+        addReportReason,
+        reportPost,
+        deleteUserAccountByAdmin,
+        toggleUserVerification,
         logout,
     };
 

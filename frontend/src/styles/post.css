@@ -722,3 +722,57 @@
     color: var(--color-text-dim);
     font-size: 11px;
 }
+
+.report-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    margin: 1rem 0 1.25rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.report-panel label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    display: block;
+    margin-bottom: 0.25rem;
+    grid-column: 1 / -1;
+}
+
+.report-panel select {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-border);
+    background: var(--color-page);
+    color: var(--color-text);
+    font: inherit;
+}
+
+.report-panel button {
+    padding: 0.7rem 1rem;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: var(--color-accent);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.report-message {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--color-text-dim);
+    font-size: 12px;
+}
+
+@media (max-width: 520px) {
+    .report-panel {
+        grid-template-columns: 1fr;
+    }
+}

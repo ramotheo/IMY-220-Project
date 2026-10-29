@@ -77,6 +77,15 @@ function Navigation() {
                     <PlusIcon />
                     <span>&nbsp; Create</span>
                 </Link>
+
+                {profile.isAdmin && (
+                    <Link
+                        to="/admin"
+                        className={location.pathname === "/admin" ? "active" : ""}
+                    >
+                        Admin
+                    </Link>
+                )}
             </div>
         </nav>
     );

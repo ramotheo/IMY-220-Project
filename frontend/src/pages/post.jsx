@@ -1,5 +1,7 @@
 import { Link, useParams } from "react-router-dom";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { apiRequest } from "../api";
 
 import {
     LikeIcon,
@@ -31,6 +33,7 @@ function Post() {
         toggleReshare,
         toggleBookmark,
         addComment,
+        reportPost,
     } = useSocial();
 
     const post = posts.find(
@@ -42,7 +45,27 @@ function Post() {
     const [replyText, setReplyText] = useState("");
     const [replyTarget, setReplyTarget] = useState(null);
     const [likedCommentIds, setLikedCommentIds] = useState([]);
+    const [reportReason, setReportReason] = useState("Spam");
+    const [reportOptions, setReportOptions] = useState([
+        "Spam",
+        "Harassment",
+        "Misleading content",
+        "Hate speech",
+        "Inappropriate content",
+    ]);
+    const [reportMessage, setReportMessage] = useState("");
     const commentsRef = useRef(null);
+
+    useEffect(() => {
+        apiRequest("/api/admin/report-reasons")
+            .then((reasons) => {
+                if (reasons?.length) {
+                    setReportOptions(reasons.map((item) => item.reason));
+                    setReportReason(reasons[0].reason);
+                }
+            })
+            .catch(() => undefined);
+    }, []);
 
     const following = isFollowing(post?.username);
     const liked = post ? isLiked(post.id) : false;
@@ -70,6 +93,17 @@ function Post() {
         setReplyText("");
         setReplyTarget(null);
         setReplyOpen(false);
+    }
+
+    async function handleReportPost() {
+        if (!reportReason) return;
+
+        try {
+            await reportPost(post.id, reportReason.trim());
+            setReportMessage("Thanks — this post has been reported.");
+        } catch (error) {
+            setReportMessage(error.message || "Unable to report this post.");
+        }
     }
 
     if (!post) {
@@ -204,6 +238,21 @@ function Post() {
                         Reply...
                     </button>
 
+                </div>
+
+                <div className="report-panel">
+                    <label htmlFor="report-reason">Report reason</label>
+                    <select
+                        id="report-reason"
+                        value={reportReason}
+                        onChange={(event) => setReportReason(event.target.value)}
+                    >
+                        {reportOptions.map((option) => (
+                            <option key={option} value={option}>{option}</option>
+                        ))}
+                    </select>
+                    <button type="button" onClick={handleReportPost}>Report post</button>
+                    {reportMessage && <p className="report-message">{reportMessage}</p>}
                 </div>
 
 

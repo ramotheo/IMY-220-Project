@@ -1,0 +1,45 @@
+[{
+  "_id": {
+    "$oid": "6ae3b55ff69d5c71fc9a7d06"
+  },
+  "reason": "Spam",
+  "createdAt": {
+    "$date": "2026-10-29T21:06:39.554Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6ae3b55ff69d5c71fc9a7d07"
+  },
+  "reason": "Harassment",
+  "createdAt": {
+    "$date": "2026-10-29T21:06:39.554Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6ae3b55ff69d5c71fc9a7d08"
+  },
+  "reason": "Misleading content",
+  "createdAt": {
+    "$date": "2026-10-29T21:06:39.554Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6ae3b55ff69d5c71fc9a7d09"
+  },
+  "reason": "Hate speech",
+  "createdAt": {
+    "$date": "2026-10-29T21:06:39.554Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6ae3b55ff69d5c71fc9a7d0a"
+  },
+  "reason": "Inappropriate content",
+  "createdAt": {
+    "$date": "2026-10-29T21:06:39.554Z"
+  }
+}]

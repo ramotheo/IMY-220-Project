@@ -1,0 +1,28 @@
+[{
+  "_id": {
+    "$oid": "6ad90be9ab0701516e472224"
+  },
+  "ownerId": {
+    "$oid": "6abf0b3707953fd39adfb46e"
+  },
+  "name": "Beach",
+  "description": "Some cute beach pics.",
+  "hashtags": [
+    "beach",
+    "travel"
+  ],
+  "postIds": [
+    {
+      "$oid": "6abf0b3b07953fd39adfb479"
+    },
+    {
+      "$oid": "6abf0b3b07953fd39adfb472"
+    }
+  ],
+  "createdAt": {
+    "$date": "2026-10-21T19:00:57.989Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-21T19:01:00.514Z"
+  }
+}]

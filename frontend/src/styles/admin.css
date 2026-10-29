@@ -1,0 +1,195 @@
+.admin-page {
+    min-height: 100vh;
+    background: var(--background-night-sky);
+    color: var(--color-text);
+    font-family: var(--font-body);
+}
+
+.admin-content {
+    width: min(1100px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 28px 0 64px;
+    display: grid;
+    gap: 18px;
+}
+
+.admin-panel {
+    padding: 22px 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: rgba(20, 26, 53, 0.82);
+    box-shadow: none;
+}
+
+.admin-panel h1,
+.admin-panel h2 {
+    margin: 0 0 10px;
+    color: var(--color-text);
+    font-size: clamp(1.2rem, 2vw, 1.8rem);
+    line-height: 1.2;
+}
+
+.admin-panel h2 {
+    font-size: 1.1rem;
+}
+
+.admin-summary,
+.admin-feedback,
+.admin-panel p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+}
+
+.admin-feedback {
+    margin-top: 10px;
+    color: var(--color-accent-soft);
+}
+
+.admin-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.admin-card {
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-card);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    color: var(--color-text-soft);
+    font-size: 0.95rem;
+}
+
+.admin-card-header strong {
+    font-size: 0.98rem;
+}
+
+.admin-card-header span {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+}
+
+.admin-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.admin-card-meta span,
+.tag {
+    padding: 4px 9px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text-soft);
+    font-size: 0.72rem;
+}
+
+.admin-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.admin-card-actions input {
+    flex: 1 1 180px;
+    min-height: 38px;
+    padding: 9px 12px;
+    border: 1px solid var(--color-border-control);
+    border-radius: var(--radius-control);
+    background: var(--color-surface-input);
+    color: var(--color-text);
+    font: inherit;
+}
+
+.admin-card button,
+.admin-reason-form button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border-control);
+    border-radius: var(--radius-control);
+    background: var(--color-surface-input);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.admin-card button:hover,
+.admin-reason-form button:hover {
+    background: var(--color-hover-surface);
+}
+
+.admin-card button.danger {
+    border-color: var(--color-danger-strong);
+    background: transparent;
+    color: var(--color-danger);
+}
+
+.admin-card button.danger:hover {
+    background: var(--color-danger-surface);
+}
+
+.admin-reason-form {
+    display: flex;
+    gap: 10px;
+    margin: 14px 0 16px;
+}
+
+.admin-reason-form input {
+    flex: 1;
+    min-height: 38px;
+    padding: 9px 12px;
+    border: 1px solid var(--color-border-control);
+    border-radius: var(--radius-control);
+    background: var(--color-surface-input);
+    color: var(--color-text);
+    font: inherit;
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.compact-list {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-inline-card {
+    min-height: 8.5rem;
+}
+
+@media (max-width: 640px) {
+    .admin-content {
+        width: min(100% - 18px, 1100px);
+    }
+
+    .admin-card-actions,
+    .admin-reason-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-card-actions button,
+    .admin-reason-form button {
+        width: 100%;
+    }
+}

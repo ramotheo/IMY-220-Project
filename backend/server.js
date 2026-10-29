@@ -15,6 +15,13 @@ const defaultProfilePictures = {
     alex: "seed-2.jpg",
     sarah: "seed-3.jpg",
 };
+const defaultReportReasons = [
+    "Spam",
+    "Harassment",
+    "Misleading content",
+    "Hate speech",
+    "Inappropriate content",
+];
 
 app.use(cors());
 app.use(express.json());
@@ -34,6 +41,8 @@ function serializeUser(user, likes = 0) {
         bookmarkedPostIds: (user.bookmarkedPostIds || []).map((id) => id.toString()),
         resharedPostIds: (user.resharedPostIds || []).map((id) => id.toString()),
         likes,
+        isAdmin: Boolean(user.isAdmin),
+        verified: Boolean(user.verified),
         createdAt: user.createdAt,
     };
 }
@@ -74,6 +83,11 @@ function serializePost(post, usersById) {
         hidden: post.hidden || false,
         locked: post.locked || false,
         views: post.views || 0,
+        reports: (post.reports || []).map((report) => ({
+            ...report,
+            reporterId: report.reporterId?.toString?.() || report.reporterId,
+            createdAt: report.createdAt || new Date(),
+        })),
     };
 }
 
@@ -104,6 +118,45 @@ function serializeAlbum(album, usersById) {
 async function getUsersById(db) {
     const users = await db.collection("users").find({}).toArray();
     return new Map(users.map((user) => [user._id.toString(), user]));
+}
+
+async function ensureAdminAccount() {
+    const db = getDatabase();
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@astrea.app";
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    const existingAdmin = await db.collection("users").findOne({ email: adminEmail });
+    const reportReasons = await db.collection("reportReasons").find({}).toArray();
+    if (reportReasons.length === 0) {
+        await db.collection("reportReasons").insertMany(
+            defaultReportReasons.map((reason) => ({ reason, createdAt: new Date() }))
+        );
+    }
+
+    if (existingAdmin) {
+        await db.collection("users").updateOne(
+            { _id: existingAdmin._id },
+            { $set: { isAdmin: true, verified: true, name: "Astrea Admin", username: "admin" } }
+        );
+        return;
+    }
+
+    await db.collection("users").insertOne({
+        _id: new ObjectId(),
+        username: "admin",
+        name: "Astrea Admin",
+        email: adminEmail,
+        password: adminPassword,
+        profilePicture: "",
+        bio: "Platform administrator",
+        followers: [],
+        following: [],
+        bookmarkedPostIds: [],
+        resharedPostIds: [],
+        isAdmin: true,
+        verified: true,
+        createdAt: new Date(),
+    });
 }
 
 app.get("/api/users", async (req, res) => {
@@ -154,6 +207,83 @@ app.get("/api/albums", async (req, res) => {
     } catch (error) {
         console.error("Error loading albums:", error);
         res.status(500).json({ message: "Unable to load albums." });
+    }
+});
+
+app.get("/api/admin/report-reasons", async (req, res) => {
+    try {
+        const db = getDatabase();
+        const reasons = await db.collection("reportReasons")
+            .find({})
+            .sort({ createdAt: 1 })
+            .toArray();
+        res.json(reasons.map((reason) => ({ id: reason._id.toString(), reason: reason.reason })));
+    } catch (error) {
+        console.error("Error loading report reasons:", error);
+        res.status(500).json({ message: "Unable to load report reasons." });
+    }
+});
+
+app.post("/api/admin/report-reasons", async (req, res) => {
+    try {
+        const { reason, userId } = req.body;
+        if (!reason || typeof reason !== "string" || !reason.trim()) {
+            return res.status(400).json({ message: "A valid report reason is required." });
+        }
+
+        const db = getDatabase();
+        const actingUser = ObjectId.isValid(userId)
+            ? await db.collection("users").findOne({ _id: new ObjectId(userId) })
+            : null;
+        if (!actingUser?.isAdmin) {
+            return res.status(403).json({ message: "Admin access required." });
+        }
+
+        const trimmedReason = reason.trim();
+        const existingReason = await db.collection("reportReasons").findOne({
+            reason: { $regex: new RegExp(`^${trimmedReason}$`, "i") },
+        });
+        if (existingReason) {
+            return res.status(409).json({ message: "That report reason already exists." });
+        }
+
+        const insertResult = await db.collection("reportReasons").insertOne({
+            reason: trimmedReason,
+            createdAt: new Date(),
+        });
+
+        res.status(201).json({
+            id: insertResult.insertedId.toString(),
+            reason: trimmedReason,
+        });
+    } catch (error) {
+        console.error("Error creating report reason:", error);
+        res.status(500).json({ message: "Unable to create report reason." });
+    }
+});
+
+app.get("/api/admin/reports", async (req, res) => {
+    try {
+        const { userId } = req.query;
+        const db = getDatabase();
+        if (!ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: "A valid admin user ID is required." });
+        }
+
+        const actingUser = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+        if (!actingUser?.isAdmin) {
+            return res.status(403).json({ message: "Admin access required." });
+        }
+
+        const posts = await db.collection("posts")
+            .find({ reports: { $exists: true, $ne: [] } })
+            .sort({ createdAt: -1 })
+            .toArray();
+        const usersById = await getUsersById(db);
+        res.json(posts.map((post) => serializePost(post, usersById)));
+    } catch (error) {
+        console.error("Error loading reported posts:", error);
+        res.status(500).json({ message: "Unable to load reported posts." });
     }
 });
 
@@ -214,6 +344,14 @@ app.patch("/api/albums/:albumId", async (req, res) => {
             return res.status(400).json({ message: "Valid album and user IDs are required." });
         }
 
+        const db = getDatabase();
+        const actingUser = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+        const existingAlbum = await db.collection("albums").findOne({ _id: new ObjectId(albumId) });
+        if (!existingAlbum) return res.status(404).json({ message: "Album not found." });
+        if (!actingUser?.isAdmin && existingAlbum.ownerId.toString() !== userId) {
+            return res.status(403).json({ message: "You can only edit your own album." });
+        }
+
         const updates = {};
         if (name !== undefined) {
             if (typeof name !== "string" || !name.trim() || name.trim().length > 80) {
@@ -234,7 +372,7 @@ app.patch("/api/albums/:albumId", async (req, res) => {
             }
             const selectedPostIds = [...new Set(postIds)].map((id) => new ObjectId(id));
             if (selectedPostIds.length) {
-                const validPostCount = await getDatabase().collection("posts").countDocuments({
+                const validPostCount = await db.collection("posts").countDocuments({
                     _id: { $in: selectedPostIds },
                     hidden: { $ne: true },
                     locked: { $ne: true },
@@ -250,9 +388,8 @@ app.patch("/api/albums/:albumId", async (req, res) => {
         }
 
         updates.updatedAt = new Date();
-        const db = getDatabase();
         const result = await db.collection("albums").updateOne(
-            { _id: new ObjectId(albumId), ownerId: new ObjectId(userId) },
+            { _id: new ObjectId(albumId) },
             { $set: updates }
         );
         if (!result.matchedCount) return res.status(404).json({ message: "Album not found." });
@@ -276,11 +413,15 @@ app.delete("/api/albums/:albumId", async (req, res) => {
             return res.status(400).json({ message: "Valid album and user IDs are required." });
         }
 
-        const result = await getDatabase().collection("albums").deleteOne({
-            _id: new ObjectId(albumId),
-            ownerId: new ObjectId(userId),
-        });
-        if (!result.deletedCount) return res.status(404).json({ message: "Album not found." });
+        const db = getDatabase();
+        const actingUser = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+        const album = await db.collection("albums").findOne({ _id: new ObjectId(albumId) });
+        if (!album) return res.status(404).json({ message: "Album not found." });
+        if (!actingUser?.isAdmin && album.ownerId.toString() !== userId) {
+            return res.status(403).json({ message: "You can only delete your own album." });
+        }
+
+        await db.collection("albums").deleteOne({ _id: new ObjectId(albumId) });
         res.status(204).end();
     } catch (error) {
         console.error("Error deleting album:", error);
@@ -310,6 +451,7 @@ app.post("/api/posts", async (req, res) => {
             hashtags: normalizeHashtags(hashtags),
             likes: [],
             comments: [],
+            reports: [],
             hidden: false,
             locked: false,
             createdAt: new Date(),
@@ -329,12 +471,19 @@ app.post("/api/posts", async (req, res) => {
 app.patch("/api/users/:userId", async (req, res) => {
     try {
         const { userId } = req.params;
-        const { username, name, bio } = req.body;
+        const { username, name, bio, actingUserId } = req.body;
         if (!ObjectId.isValid(userId) || !username?.trim() || !name?.trim()) {
             return res.status(400).json({ message: "A valid user, name, and username are required." });
         }
 
         const db = getDatabase();
+        const actingUser = ObjectId.isValid(actingUserId)
+            ? await db.collection("users").findOne({ _id: new ObjectId(actingUserId) })
+            : null;
+        if (!actingUser?.isAdmin && actingUserId && actingUserId !== userId) {
+            return res.status(403).json({ message: "You can only edit your own profile." });
+        }
+
         const existingUser = await db.collection("users").findOne({
             username: username.trim(),
             _id: { $ne: new ObjectId(userId) },
@@ -495,6 +644,91 @@ app.patch("/api/posts/:postId/like", async (req, res) => {
     }
 });
 
+app.post("/api/posts/:postId/report", async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { userId, reason } = req.body;
+        if (!ObjectId.isValid(postId) || !ObjectId.isValid(userId) || !reason || typeof reason !== "string") {
+            return res.status(400).json({ message: "A valid post, user, and report reason are required." });
+        }
+
+        const db = getDatabase();
+        const post = await db.collection("posts").findOne({ _id: new ObjectId(postId) });
+        if (!post) return res.status(404).json({ message: "Post not found." });
+
+        const trimmedReason = reason.trim();
+        const alreadyReported = (post.reports || []).some((entry) =>
+            entry.reporterId?.toString() === userId && entry.reason === trimmedReason
+        );
+        if (alreadyReported) {
+            return res.status(409).json({ message: "You already reported this post for that reason." });
+        }
+
+        const updatedPost = await db.collection("posts").findOneAndUpdate(
+            { _id: new ObjectId(postId) },
+            {
+                $push: {
+                    reports: {
+                        reporterId: new ObjectId(userId),
+                        reason: trimmedReason,
+                        createdAt: new Date(),
+                    },
+                },
+            },
+            { returnDocument: "after" }
+        );
+
+        res.status(201).json(serializePost(updatedPost.value, await getUsersById(db)));
+    } catch (error) {
+        console.error("Error reporting post:", error);
+        res.status(500).json({ message: "Unable to report this post." });
+    }
+});
+
+app.patch("/api/posts/:postId", async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { userId, caption, hashtags, actingUserId } = req.body;
+        if (!ObjectId.isValid(postId) || !ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: "A valid post and user ID are required." });
+        }
+
+        const db = getDatabase();
+        const actingUser = ObjectId.isValid(actingUserId)
+            ? await db.collection("users").findOne({ _id: new ObjectId(actingUserId) })
+            : null;
+        const post = await db.collection("posts").findOne({ _id: new ObjectId(postId) });
+        if (!post) return res.status(404).json({ message: "Post not found." });
+        if (!actingUser?.isAdmin && post.authorId.toString() !== userId) {
+            return res.status(403).json({ message: "You can only edit your own posts." });
+        }
+
+        const updates = {};
+        if (caption !== undefined) {
+            if (typeof caption !== "string") return res.status(400).json({ message: "Caption must be a string." });
+            updates.caption = caption.trim();
+        }
+        if (hashtags !== undefined) {
+            updates.hashtags = normalizeHashtags(hashtags);
+        }
+
+        if (!Object.keys(updates).length) {
+            return res.status(400).json({ message: "At least one post field must be updated." });
+        }
+
+        await db.collection("posts").updateOne(
+            { _id: new ObjectId(postId) },
+            { $set: updates }
+        );
+
+        const updatedPost = await db.collection("posts").findOne({ _id: new ObjectId(postId) });
+        res.json(serializePost(updatedPost, await getUsersById(db)));
+    } catch (error) {
+        console.error("Error updating post:", error);
+        res.status(500).json({ message: "Unable to update post." });
+    }
+});
+
 app.post("/api/posts/:postId/comments", async (req, res) => {
     try {
         const { postId } = req.params;
@@ -542,16 +776,22 @@ app.patch("/api/posts/:postId/visibility", async (req, res) => {
         }
 
         const db = getDatabase();
-        const result = await db.collection("posts").updateOne(
-            { _id: new ObjectId(postId), authorId: new ObjectId(userId) },
-            { $set: { [property]: value } }
-        );
-        if (!result.matchedCount) {
+        const actingUser = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+        const post = await db.collection("posts").findOne({ _id: new ObjectId(postId) });
+        if (!post) {
             return res.status(404).json({ message: "Post not found." });
         }
+        if (!actingUser?.isAdmin && post.authorId.toString() !== userId) {
+            return res.status(403).json({ message: "You can only modify your own posts." });
+        }
 
-        const post = await db.collection("posts").findOne({ _id: new ObjectId(postId) });
-        res.json(serializePost(post, await getUsersById(db)));
+        await db.collection("posts").updateOne(
+            { _id: new ObjectId(postId) },
+            { $set: { [property]: value } }
+        );
+
+        const updatedPost = await db.collection("posts").findOne({ _id: new ObjectId(postId) });
+        res.json(serializePost(updatedPost, await getUsersById(db)));
     } catch (error) {
         console.error("Error updating post visibility:", error);
         res.status(500).json({ message: "Unable to update post visibility." });
@@ -567,13 +807,16 @@ app.delete("/api/posts/:postId", async (req, res) => {
         }
 
         const db = getDatabase();
-        const result = await db.collection("posts").deleteOne({
-            _id: new ObjectId(postId),
-            authorId: new ObjectId(userId),
-        });
-        if (!result.deletedCount) {
+        const actingUser = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+        const post = await db.collection("posts").findOne({ _id: new ObjectId(postId) });
+        if (!post) {
             return res.status(404).json({ message: "Post not found." });
         }
+        if (!actingUser?.isAdmin && post.authorId.toString() !== userId) {
+            return res.status(403).json({ message: "You can only delete your own posts." });
+        }
+
+        await db.collection("posts").deleteOne({ _id: new ObjectId(postId) });
 
         await db.collection("albums").updateMany(
             { postIds: new ObjectId(postId) },
@@ -589,11 +832,19 @@ app.delete("/api/posts/:postId", async (req, res) => {
 app.delete("/api/users/:userId", async (req, res) => {
     try {
         const { userId } = req.params;
+        const { actingUserId } = req.body || {};
         if (!ObjectId.isValid(userId)) {
             return res.status(400).json({ message: "A valid user ID is required." });
         }
 
         const db = getDatabase();
+        const actingUser = ObjectId.isValid(actingUserId)
+            ? await db.collection("users").findOne({ _id: new ObjectId(actingUserId) })
+            : null;
+        if (!actingUser?.isAdmin && actingUserId && actingUserId !== userId) {
+            return res.status(403).json({ message: "You can only delete your own account." });
+        }
+
         const userObjectId = new ObjectId(userId);
         const usersCollection = db.collection("users");
         const ownedPosts = await db.collection("posts")
@@ -625,6 +876,36 @@ app.delete("/api/users/:userId", async (req, res) => {
     } catch (error) {
         console.error("Error deleting account:", error);
         res.status(500).json({ message: "Unable to delete account." });
+    }
+});
+
+app.patch("/api/users/:userId/verification", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { actingUserId, verified } = req.body;
+        if (!ObjectId.isValid(userId) || !ObjectId.isValid(actingUserId)) {
+            return res.status(400).json({ message: "Valid user IDs are required." });
+        }
+
+        const db = getDatabase();
+        const actingUser = await db.collection("users").findOne({ _id: new ObjectId(actingUserId) });
+        if (!actingUser?.isAdmin) {
+            return res.status(403).json({ message: "Admin access required." });
+        }
+
+        const user = await db.collection("users").findOneAndUpdate(
+            { _id: new ObjectId(userId) },
+            { $set: { verified: Boolean(verified) } },
+            { returnDocument: "after" }
+        );
+        if (!user.value) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        res.json(serializeUser(user.value));
+    } catch (error) {
+        console.error("Error updating verification:", error);
+        res.status(500).json({ message: "Unable to update verification status." });
     }
 });
 
@@ -717,6 +998,8 @@ app.post("/api/auth/signup", async (req, res) => {
             following: [],
             bookmarkedPostIds: [],
             resharedPostIds: [],
+            isAdmin: false,
+            verified: false,
             createdAt: new Date(),
         };
 
@@ -776,6 +1059,7 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
             image: req.file.filename,
             likes: [],
             comments: [],
+            reports: [],
             createdAt: new Date(),
         };
 
@@ -798,13 +1082,16 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
 ===================== SERVER INITIALIZATION =====================
 */
 
-connectToDatabase().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Backend running on http://localhost:${PORT}`);
+connectToDatabase()
+    .then(async () => {
+        await ensureAdminAccount();
+        app.listen(PORT, () => {
+            console.log(`Backend running on http://localhost:${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error("Failed to connect to the database:", err);
     });
-}).catch((err) => {
-    console.error("Failed to connect to the database:", err);
-});
 
 app.use((error, req, res, next) => {
     if (error.code === "LIMIT_FILE_SIZE" || error.code === "INVALID_FILE_TYPE") {
