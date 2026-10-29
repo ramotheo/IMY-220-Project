@@ -15,6 +15,25 @@ const stars = [
     [61, 37, 2, 2.7], [85, 91, 1, 1.3], [3, 83, 1, 2], [49, 4, 2, 0.1],
 ];
 
+const galleryImages = [
+    "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=600",
+    "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=600",
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=600",
+    "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=600",
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
+    "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=600",
+    "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600",
+    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600",
+    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=600",
+    "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=600",
+    "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600",
+    "https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600",
+    "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=600",
+    "https://images.unsplash.com/photo-1511497584788-876760111969?w=600",
+    "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=600",
+    "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600",
+];
+
 function canScrollWithin(target, direction) {
     let element = target instanceof Element ? target : null;
 
@@ -46,53 +65,49 @@ function canScrollWithin(target, direction) {
 }
 
 function Landing() {
-    const [authVisible, setAuthVisible] = useState(false);
+    const [stage, setStage] = useState(0);
     const [authMode, setAuthMode] = useState("login");
+
     const touchStartY = useRef(null);
+    const stageRef = useRef(0);
+    const scrollLocked = useRef(false);
+    const lockTimer = useRef(null);
+
+    function changeStage(direction) {
+        if (scrollLocked.current) return;
+
+        const nextStage = Math.max(
+            0,
+            Math.min(2, stageRef.current + direction)
+        );
+
+        if (nextStage === stageRef.current) return;
+
+        scrollLocked.current = true;
+        stageRef.current = nextStage;
+        setStage(nextStage);
+
+        lockTimer.current = window.setTimeout(() => {
+            scrollLocked.current = false;
+        }, 1200);
+    }
 
     useEffect(() => {
-        function handleKeyDown(event) {
-            if (
-                event.target instanceof HTMLElement &&
-                event.target.matches(
-                    "input, textarea, select, [contenteditable='true']"
-                )
-            ) {
-                return;
-            }
-
-            if (
-                ["ArrowDown", "PageDown", "End", " "].includes(event.key)
-            ) {
-                event.preventDefault();
-                setAuthVisible(true);
-            } else if (
-                ["ArrowUp", "PageUp", "Home"].includes(event.key)
-            ) {
-                event.preventDefault();
-                setAuthVisible(false);
-            }
-        }
-
-        window.addEventListener("keydown", handleKeyDown);
-
         return () => {
-            window.removeEventListener("keydown", handleKeyDown);
+            window.clearTimeout(lockTimer.current);
         };
     }, []);
 
     function handleWheel(event) {
-        if (Math.abs(event.deltaY) < 5) {
-            return;
-        }
+        if (Math.abs(event.deltaY) < 8) return;
 
         const direction = Math.sign(event.deltaY);
 
-        if (canScrollWithin(event.target, direction)) {
-            return;
-        }
+        // Let the login/signup form scroll normally when necessary.
+        if (canScrollWithin(event.target, direction)) return;
 
-        setAuthVisible(direction > 0);
+        event.preventDefault();
+        changeStage(direction);
     }
 
     function handleTouchStart(event) {
@@ -101,28 +116,26 @@ function Landing() {
     }
 
     function handleTouchEnd(event) {
-        if (touchStartY.current === null) {
-            return;
-        }
+        if (touchStartY.current === null) return;
 
         const touch = event.changedTouches[0];
-        const direction = touchStartY.current - touch.clientY;
+        const distance = touchStartY.current - touch.clientY;
 
         touchStartY.current = null;
 
-        if (
-            Math.abs(direction) < 40 ||
-            canScrollWithin(event.target, Math.sign(direction))
-        ) {
-            return;
-        }
+        if (Math.abs(distance) < 45) return;
 
-        setAuthVisible(direction > 0);
+        const direction = Math.sign(distance);
+
+        if (canScrollWithin(event.target, direction)) return;
+
+        changeStage(direction);
     }
 
     return (
         <main
             className="landing-page"
+            data-stage={stage}
             aria-label="Astrea landing page"
             onWheel={handleWheel}
             onTouchStart={handleTouchStart}
@@ -352,26 +365,71 @@ function Landing() {
                     </svg>
                 </div>
 
+                <div className="landing-gallery" aria-hidden="true">
+                    <div className="landing-gallery-grid">
+                        {galleryImages.map((src, index) => {
+                            const row = Math.floor(index / 4);
+                            const col = index % 4;
+                            const distanceFromCenter =
+                                Math.abs(col - 1.5) + Math.abs(row - 1.5);
+                            const revealDelay =
+                                Math.max(0, 3 - distanceFromCenter) * 0.18;
+
+                            return (
+                                <div
+                                    className={`landing-gallery-image image-${index + 1}`}
+                                    key={src}
+                                    style={{
+                                        "--image-delay": `${revealDelay}s`,
+                                        "--image-x": `${(col - 1.5) * 18}px`,
+                                        "--image-y": `${(row - 1.5) * 16}px`,
+                                    }}
+                                >
+                                    <img
+                                        src={src}
+                                        alt=""
+                                        loading={index < 8 ? "eager" : "lazy"}
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
                 <section
                     className="landing-intro"
-                    aria-labelledby="landing-title"
+                    aria-label="Welcome to Astrea"
                 >
-                    <p className="landing-eyebrow">
+                    <p className="landing-tagline">
                         SHARE MOMENTS THAT SHINE
                     </p>
 
-                    <h1 id="landing-title">
-                        Keep the moments.
-                        <span>Find your people.</span>
-                    </h1>
+                    <svg
+                        className="landing-wordmark"
+                        viewBox="0 0 800 180"
+                        role="img"
+                        aria-label="Astrea"
+                    >
+                        <text
+                            className="landing-wordmark-text"
+                            x="400"
+                            y="130"
+                            textAnchor="middle"
+                        >
+                            astrea
+                        </text>
+                    </svg>
 
                     <div className="landing-description">
+                        <p className="landing-description-lead">
+                            Keep the moments. Find your people.
+                        </p>
+
                         <p className="landing-description-detail">
-                            <strong>Astrea</strong> is a space to share your photos. It lets you 
-                            collect your favourite memories into albums,
-                            follow the people who inspire you, and
-                            discover the world through the moments
-                            they capture.
+                            <strong>Astrea</strong> is a space to share
+                            your photos. It lets you collect your
+                            favourite memories into albums, follow
+                            the people who inspire you, and discover
+                            the world through the moments they capture.
                         </p>
                     </div>
                 </section>
@@ -379,20 +437,27 @@ function Landing() {
                 <button
                     className="landing-scroll-prompt"
                     type="button"
-                    onClick={() => setAuthVisible(true)}
-                    aria-label="Scroll down to login or sign up"
+                    onClick={() => changeStage(1)}
+                    aria-label={
+                        stage === 0 ?
+                        "Discover Astrea" :
+                        "Scroll down to login or sign up"
+                    }
+                    hidden={stage === 2}
                 >
-                    <span>SCROLL DOWN</span>
+                    <span>
+                        {stage === 0 ? "SCROLL DOWN" : "CONTINUE"}
+                    </span>
                 </button>
             </section>
 
             <section
                 className={`landing-auth-cover${
-                    authVisible ? " is-visible" : ""
+                    stage === 2 ? " is-visible" : ""
                 }`}
                 aria-label="Login or sign up"
-                aria-hidden={!authVisible}
-                inert={!authVisible}
+                aria-hidden={stage !== 2}
+                inert={stage !== 2}
             >
                 <Form
                     mode={authMode}
